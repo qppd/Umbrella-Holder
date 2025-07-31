@@ -28,7 +28,7 @@
 
 ✅ **Design**  
 ✅ **3D Modeling**  
-🧩 **Wiring/Schematic (done)**  
+✅ **Wiring/Schematic**  
 🧪 **Prototype Testing (soon)**
 
 ---
