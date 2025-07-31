@@ -24,45 +24,23 @@
 
 ---
 
-## 🧰 Getting Started
+## 🚀 Status
 
-### 🖥️ Clone the Repository
+✅ **Design**  
+✅ **3D Modeling**  
+✅ **Wiring/Schematic**  
+🧪 **Prototype Testing (soon)**
 
-```bash
-git clone https://github.com/qppd/Umbrella-Holder.git
-cd Umbrella-Holder
-💾 Open the Arduino Code
-Launch the Arduino IDE.
+---
 
-Go to File > Open and select the .ino file inside the firmware/ folder (e.g., UmbrellaDryer.ino).
+## 👨‍🔧 Author
 
-Make sure your board is set to Arduino UNO under Tools > Board > Arduino AVR Boards > Arduino Uno.
-
-Select the correct COM port under Tools > Port.
-
-Click the Upload (🔼) button to flash the code.
-
-🧱 Required Libraries
-Make sure the following libraries are installed in Arduino IDE:
-
-LiquidCrystal_I2C (for the 20x4 LCD)
-
-Servo (for servo motor control, if used)
-
-You can install them via Tools > Manage Libraries...
-
-🚀 Status
-✅ Design
-✅ 3D Modeling
-✅ Wiring/Schematic
-🧪 Prototype Testing (soon)
-
-👨‍🔧 Author
-Created by Sajed Lopez Mendoza
+Created by [**Sajed Lopez Mendoza**](https://github.com/qppd)  
 🛠️ Built for local innovation and practical daily use.
 
-📜 License
-This project is licensed under the MIT License.
-Feel free to use, modify, or improve it!
+---
 
-👉 GitHub Repository
+## 📜 License
+
+This project is licensed under the **MIT License**.  
+Feel free to use, modify, or improve it!      https://github.com/qppd/Umbrella-Holder              add guide for cloning and downloading and opening with Arduino IDE and running it with arduino UNO board
