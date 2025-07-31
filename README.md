@@ -51,7 +51,7 @@ Or download ZIP from [this link](https://github.com/qppd/Umbrella-Holder/archive
 1. Launch the **Arduino IDE** (install from [arduino.cc](https://www.arduino.cc/en/software) if not yet installed).
 2. Click **File > Open...**
 3. Navigate to the folder:  
-   `Umbrella-Holder/firmware/umbrella_dryer.ino`
+   `Umbrella-Holder/UmbrellaDryer.ino`
 4. Select and open the `.ino` file.
 
 ---
