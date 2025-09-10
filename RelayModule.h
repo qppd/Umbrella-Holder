@@ -2,10 +2,12 @@
 #define RELAY_MODULE_H
 
 #include <Arduino.h>
+// ...existing code...
+#include "Pins.h"
 
 class RelayModule {
 public:
-    RelayModule(uint16_t relay1 = 8, uint16_t relay2 = 9);
+    RelayModule(uint16_t relay1 = RELAY_HEATER, uint16_t relay2 = RELAY_BLOWER);
     void init();
     void set(uint16_t relay, bool opened);
 private:

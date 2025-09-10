@@ -1,4 +1,6 @@
+
 #include "DhtSensor.h"
+#include "Pins.h"
 
 DhtSensor::DhtSensor() : dht(DHTPIN, DHTTYPE) {}
 

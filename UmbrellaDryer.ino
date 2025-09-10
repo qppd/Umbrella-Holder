@@ -1,10 +1,12 @@
 
+
 #include "TactileButton.h"
 #include "DhtSensor.h"
 #include "I2cDisplay.h"
 #include "LedIndicator.h"
 #include "PidController.h"
 #include "RelayModule.h"
+#include "Pins.h"
 
 #define MODE_DEVELOPMENT 1
 #define MODE_PRODUCTION 2
@@ -21,8 +23,7 @@ String serialInput = "";
 
 // Production mode variables
 const unsigned long DRYING_DURATION = 8UL * 60UL * 1000UL; // 8 minutes in ms
-const int RELAY_HEATER = 8;
-const int RELAY_BLOWER = 9;
+// Pins are now defined in Pins.h
 const double HEATER_SETPOINT = 60.0;
 
 bool dryingActive = false;
@@ -68,10 +69,10 @@ void loop() {
         lcd.clear();
       } else if (serialInput == "test_led") {
         Serial.println("Testing LEDs...");
-        leds.set(2, true); delay(300);
-        leds.set(3, true); delay(300);
-        leds.set(11, true); delay(300);
-        leds.set(2, false); leds.set(3, false); leds.set(11, false);
+  leds.set(LED_1, true); delay(300);
+  leds.set(LED_2, true); delay(300);
+  leds.set(LED_3, true); delay(300);
+  leds.set(LED_1, false); leds.set(LED_2, false); leds.set(LED_3, false);
       } else if (serialInput == "test_pid") {
         Serial.println("Testing PID...");
         pid.setCurrentTemperature(dht.getTemperature());
@@ -79,9 +80,9 @@ void loop() {
         Serial.print("PID Output: "); Serial.println(pid.getOutput());
       } else if (serialInput == "test_relay") {
         Serial.println("Testing Relays...");
-        relays.set(8, true); delay(500);
-        relays.set(9, true); delay(500);
-        relays.set(8, false); relays.set(9, false);
+      relays.set(RELAY_HEATER, true); delay(500);
+      relays.set(RELAY_BLOWER, true); delay(500);
+      relays.set(RELAY_HEATER, false); relays.set(RELAY_BLOWER, false);
       } else {
         Serial.println("Unknown command. Try: test_button, test_dht, test_lcd, test_led, test_pid, test_relay");
       }
@@ -99,9 +100,9 @@ void loop() {
     // Turn on blower and heater
     relays.set(RELAY_BLOWER, true); // Blower always ON during drying
     relays.set(RELAY_HEATER, true); // Heater ON, will be PID controlled
-    leds.set(2, true); // Example: indicate drying
-    leds.set(3, true);
-    leds.set(11, true);
+  leds.set(LED_1, true); // Example: indicate drying
+  leds.set(LED_2, true);
+  leds.set(LED_3, true);
     pid.setSetpoint(HEATER_SETPOINT);
     lcd.setText("Drying...", 0, 0);
   }
@@ -127,9 +128,9 @@ void loop() {
       // Stop everything
       relays.set(RELAY_HEATER, false);
       relays.set(RELAY_BLOWER, false);
-      leds.set(2, false);
-      leds.set(3, false);
-      leds.set(11, false);
+  leds.set(LED_1, false);
+  leds.set(LED_2, false);
+  leds.set(LED_3, false);
       lcd.setText("Done!", 0, 0);
       dryingActive = false;
     }

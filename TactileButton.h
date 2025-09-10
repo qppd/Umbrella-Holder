@@ -3,13 +3,8 @@
 
 #include <Arduino.h>
 
-#define BUTTON_COUNT 4
-#define DEBOUNCE_DELAY 50
 
-#define BUTTON_1 4
-#define BUTTON_2 5
-#define BUTTON_3 6
-#define BUTTON_4 7
+#include "Pins.h"
 
 class TactileButton {
 public:

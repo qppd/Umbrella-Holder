@@ -4,8 +4,8 @@
 #include <Arduino.h>
 #include "DHT.h"
 
-#define DHTPIN 10
-#define DHTTYPE DHT22
+
+#include "Pins.h"
 
 class DhtSensor {
 public:

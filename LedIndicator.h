@@ -2,10 +2,12 @@
 #define LED_INDICATOR_H
 
 #include <Arduino.h>
+// ...existing code...
+#include "Pins.h"
 
 class LedIndicator {
 public:
-    LedIndicator(int pin1 = 2, int pin2 = 3, int pin3 = 11);
+    LedIndicator(int pin1 = LED_1, int pin2 = LED_2, int pin3 = LED_3);
     void init();
     void set(int ledPin, bool on);
 private:
