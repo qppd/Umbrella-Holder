@@ -8,7 +8,7 @@
 
 #define MODE_DEVELOPMENT 1
 #define MODE_PRODUCTION 2
-#define SYSTEM_MODE MODE_DEVELOPMENT // Change to MODE_PRODUCTION for full code
+#define SYSTEM_MODE MODE_PRODUCTION // Change to MODE_PRODUCTION for full code
 
 TactileButton buttons;
 DhtSensor dht;
@@ -18,9 +18,15 @@ PidController pid;
 RelayModule relays;
 
 String serialInput = "";
-bool isOpen = true;
-unsigned long loop_time_for_interval = 0;
-const unsigned long loop_interval = 5000; // 5 seconds, adjust as needed
+
+// Production mode variables
+const unsigned long DRYING_DURATION = 8UL * 60UL * 1000UL; // 8 minutes in ms
+const int RELAY_HEATER = 8;
+const int RELAY_BLOWER = 9;
+const double HEATER_SETPOINT = 60.0;
+
+bool dryingActive = false;
+unsigned long dryingStartTime = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -86,30 +92,46 @@ void loop() {
   }
 #else
   // PRODUCTION: Full system logic
-  buttons.setInputFlags();
-  buttons.resolveInputFlags();
+  // Start drying cycle on boot if not already started
+  if (!dryingActive) {
+    dryingActive = true;
+    dryingStartTime = millis();
+    // Turn on blower and heater
+    relays.set(RELAY_BLOWER, true); // Blower always ON during drying
+    relays.set(RELAY_HEATER, true); // Heater ON, will be PID controlled
+    leds.set(2, true); // Example: indicate drying
+    leds.set(3, true);
+    leds.set(11, true);
+    pid.setSetpoint(HEATER_SETPOINT);
+    lcd.setText("Drying...", 0, 0);
+  }
 
-  if (millis() > loop_time_for_interval + loop_interval) {
-    loop_time_for_interval = millis();
-    float temp = dht.getTemperature(true);
-    float hum = dht.getHumidity();
+  // During drying
+  if (dryingActive) {
+    float temp = dht.getTemperature();
     pid.setCurrentTemperature(temp);
     pid.compute();
-    // Example: control relays/leds based on PID output or other logic
-    if (isOpen) {
-      leds.set(2, true);
-      leds.set(3, true);
-      leds.set(11, true);
-      relays.set(8, true);
-      relays.set(9, true);
-      isOpen = false;
-    } else {
+    double pidOutput = pid.getOutput();
+
+    // Heater relay PID control (simple ON/OFF for SSR)
+    if (temp < HEATER_SETPOINT - 1) {
+      relays.set(RELAY_HEATER, true); // Turn heater ON
+    } else if (temp > HEATER_SETPOINT + 1) {
+      relays.set(RELAY_HEATER, false); // Turn heater OFF
+    }
+    // Blower always ON during drying
+    relays.set(RELAY_BLOWER, true);
+
+    // Check if drying time is over
+    if (millis() - dryingStartTime >= DRYING_DURATION) {
+      // Stop everything
+      relays.set(RELAY_HEATER, false);
+      relays.set(RELAY_BLOWER, false);
       leds.set(2, false);
       leds.set(3, false);
       leds.set(11, false);
-      relays.set(8, false);
-      relays.set(9, false);
-      isOpen = true;
+      lcd.setText("Done!", 0, 0);
+      dryingActive = false;
     }
   }
 #endif
