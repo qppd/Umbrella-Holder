@@ -2,7 +2,7 @@
 #define RELAY_MODULE_H
 
 #include <Arduino.h>
-// ...existing code...
+
 #include "Pins.h"
 
 class RelayModule {

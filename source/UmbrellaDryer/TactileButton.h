@@ -13,13 +13,13 @@ public:
     void setInputFlags();
     void resolveInputFlags();
     void inputAction(int BUTTON_PIN);
+    const int inputPins[BUTTON_COUNT] = { BUTTON_1, BUTTON_2, BUTTON_3, BUTTON_4 };
 
 private:
     int inputState[BUTTON_COUNT];
     int lastInputState[BUTTON_COUNT];
     bool inputFlags[BUTTON_COUNT];
     long lastDebounceTime[BUTTON_COUNT];
-    const int inputPins[BUTTON_COUNT] = { BUTTON_1, BUTTON_2, BUTTON_3, BUTTON_4 };
     bool first_time;
 };
 

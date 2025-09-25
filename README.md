@@ -142,14 +142,109 @@ UmbrellaDryer/
    - LCD displays "Done!" message
    - System enters standby mode
 
-### � Development Mode
-Toggle `SYSTEM_MODE` to `MODE_DEVELOPMENT` for testing individual components:
-- `test_button` - Test button responsiveness
-- `test_dht` - Check sensor readings  
-- `test_lcd` - Verify display functionality
-- `test_led` - Test LED indicators
-- `test_pid` - Monitor PID controller
-- `test_relay` - Test relay operations
+### 🔧 Development Mode
+Set `SYSTEM_MODE` to `MODE_DEVELOPMENT` for comprehensive component testing via Serial Monitor at 115200 baud. The system provides an extensive command interface for testing, monitoring, and debugging.
+
+**Quick Start in Development Mode:**
+1. Set `#define SYSTEM_MODE MODE_DEVELOPMENT` in UmbrellaDryer.ino
+2. Upload to Arduino
+3. Open Serial Monitor (115200 baud)
+4. Type `help` to see all available commands
+
+**Key Features:**
+- ✅ Individual component testing with detailed diagnostics
+- 📊 Real-time sensor monitoring and data logging
+- 🎛️ Manual control of all hardware components
+- 🔄 Interactive testing modes for buttons and sensors
+- 📈 System health monitoring and status reporting
+- 🛠️ PID controller testing and parameter validation
+
+---
+
+## 🖥️ Serial Commands Reference (Development Mode)
+
+### System Information Commands
+| Command | Description | Output |
+|---------|-------------|--------|
+| `help` or `?` | Display complete command reference | Full command list with descriptions |
+| `status` | Show component status overview | Health status of all components |
+| `info` | Display detailed system information | Version, uptime, memory, specifications |
+| `pins` | Show pin configuration mapping | Complete pin assignment table |
+| `sensors` | Get current sensor readings | Temperature, humidity, PID output |
+
+### Component Testing Commands
+| Command | Description | Test Details |
+|---------|-------------|--------------|
+| `test_all` | Run comprehensive system test | Tests all components sequentially |
+| `test_dht` | Test DHT22 sensor | Temperature/humidity readings + stability test |
+| `test_lcd` | Test I2C LCD display | Clear, write patterns, character test |
+| `test_led` | Test LED indicators | Individual and group LED control |
+| `test_relay` | Test relay modules | Heater and blower relay operation |
+| `test_button` | Test tactile buttons | 10-second interactive button test |
+| `test_pid` | Test PID controller | Current output and setpoint testing |
+
+### Monitoring & Interactive Modes
+| Command | Description | Features |
+|---------|-------------|----------|
+| `monitor_start` | Start continuous monitoring | Real-time sensor data every 2 seconds |
+| `monitor_stop` | Stop continuous monitoring | Halt automatic sensor readings |
+| `interactive_on` | Enable interactive button mode | Real-time button press feedback |
+| `interactive_off` | Disable interactive button mode | Stop button monitoring |
+
+### Manual Hardware Control
+| Command | Description | Action |
+|---------|-------------|--------|
+| `relay_heater_on/off` | Control heater relay | Direct SSR control |
+| `relay_blower_on/off` | Control blower relay | Direct SSR control |
+| `led_all_on/off` | Control all LEDs | Turn all status LEDs on/off |
+| `lcd_clear` | Clear LCD display | Blank the display |
+
+### System Control
+| Command | Description | Action |
+|---------|-------------|--------|
+| `reset` | Software reset | Restart the system |
+| `production` | Production mode info | Instructions for switching modes |
+
+### Example Testing Session
+```
+========================================
+   UMBRELLA DRYER - DEVELOPMENT MODE
+========================================
+Initializing components... DONE
+
+Type 'help' for available commands.
+
+> status
+========================================
+         SYSTEM STATUS
+========================================
+DHT22 Sensor:     OK
+I2C LCD Display:  OK
+LED Indicators:   OK
+Relay Modules:    OK
+Tactile Buttons:  OK
+PID Controller:   OK
+========================================
+
+> sensors
+========================================
+        SENSOR READINGS
+========================================
+Temperature: 25.30 °C
+Humidity:    60.20 %
+PID Output:  2500.00
+Timestamp:   15420 ms
+========================================
+
+> test_all
+========================================
+      FULL SYSTEM TEST STARTED
+========================================
+[Runs complete component test suite]
+========================================
+      FULL SYSTEM TEST COMPLETED
+========================================
+```
 
 ---
 
@@ -206,10 +301,20 @@ double kd = 22;  // Derivative gain
 
 ### System Modes
 ```cpp
-#define MODE_DEVELOPMENT 1  // Component testing mode
-#define MODE_PRODUCTION 2   // Full system operation
-#define SYSTEM_MODE MODE_PRODUCTION  // Current mode
+#define MODE_DEVELOPMENT 1  // Serial testing & diagnostics mode
+#define MODE_PRODUCTION 2   // Full automatic operation mode
+#define SYSTEM_MODE MODE_DEVELOPMENT  // Current mode (set for testing)
 ```
+
+#### Development Mode Features
+- **🔧 Serial Command Interface:** 25+ commands for testing and control
+- **📊 Real-time Monitoring:** Continuous sensor data streaming
+- **🎛️ Interactive Testing:** Live button press feedback
+- **📈 System Health Checks:** Component status and diagnostics
+- **🛠️ Manual Override:** Direct control of all hardware
+- **💾 Memory Monitoring:** RAM usage and system information
+- **🔄 Stability Testing:** Sensor consistency and error detection
+- **📋 Comprehensive Logging:** Detailed test results and timestamps
 
 ---
 
@@ -222,6 +327,8 @@ Install these libraries through the Arduino Library Manager:
 | [PID_v1](https://playground.arduino.cc/Code/PIDLibrary/) | ≥1.2.0 | Temperature control algorithm |
 | [DHT sensor library](https://github.com/adafruit/DHT-sensor-library) | ≥1.4.0 | DHT22 sensor communication |
 | [LiquidCrystal_I2C](https://github.com/johnrickman/LiquidCrystal_I2C) | ≥1.1.2 | I2C LCD display interface |
+
+**Note:** No additional libraries required for the comprehensive serial testing system - it's built using native Arduino Serial functionality.
 
 ### Installation Commands
 ```bash
@@ -280,11 +387,54 @@ GND            →   GND (All components)
 - Test individual LEDs with `test_led`
 - Check pin assignments in Pins.h
 
-### Debug Mode
-Switch to development mode for component-level testing:
-```cpp
-#define SYSTEM_MODE MODE_DEVELOPMENT
-```
+### 🔍 Development Mode Testing
+
+#### Setting Up Serial Testing
+1. **Enable Development Mode:**
+   ```cpp
+   #define SYSTEM_MODE MODE_DEVELOPMENT
+   ```
+
+2. **Serial Monitor Configuration:**
+   - Baud Rate: 115200
+   - Line Ending: Both NL & CR
+   - Open Serial Monitor after upload
+
+3. **First Steps:**
+   ```
+   > help          // Show all commands
+   > status        // Check component health
+   > test_all      // Run full system test
+   ```
+
+#### Systematic Testing Approach
+1. **Component Verification:**
+   ```
+   > test_dht      // Verify sensor communication
+   > test_lcd      // Check display functionality
+   > test_led      // Validate LED indicators
+   > test_relay    // Test relay switching
+   ```
+
+2. **Interactive Testing:**
+   ```
+   > interactive_on     // Enable button monitoring
+   > monitor_start      // Start sensor logging
+   ```
+
+3. **Manual Control Testing:**
+   ```
+   > relay_heater_on    // Test heater control
+   > led_all_on         // Test LED control
+   > lcd_clear          // Test display control
+   ```
+
+#### Serial Command Troubleshooting
+- **No Response:** Check baud rate (115200) and cable connection
+- **Garbled Text:** Verify line ending settings (NL + CR)
+- **Commands Not Working:** Type exact commands (case insensitive)
+- **Sensor Errors:** Check wiring and power connections
+- **Display Issues:** Verify I2C address (0x27) and connections
 
 ---
 
