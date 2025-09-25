@@ -360,6 +360,14 @@ arduino-cli lib install "LiquidCrystal I2C"
 
 ## 🔌 Wiring Diagram
 
+
+<div align="center">
+   <img src="diagram/Umbrella_Dryer_Wiring_Diagram.png" alt="Umbrella Dryer Wiring Diagram" width="600"/>
+</div>
+
+<details>
+<summary>Pin Mapping Table</summary>
+
 ```
 Arduino Uno/Nano    Component
 ================    =========
@@ -378,8 +386,8 @@ Analog Pin A5   →   LCD SCL (I2C)
 5V             →   VCC (All components)
 GND            →   GND (All components)
 ```
+</details>
 
----
 
 ## 🚦 Troubleshooting
 
