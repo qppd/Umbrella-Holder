@@ -1,4 +1,4 @@
-# ☂️ Umbrella Dryer - Smart Automated Drying System
+# ☂️ Umbrella Holder - Smart Automated Umbrella Drying System
 
 <div align="center">
 
