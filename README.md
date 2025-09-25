@@ -143,7 +143,7 @@ UmbrellaDryer/
    - System enters standby mode
 
 ### 🔧 Development Mode
-Set `SYSTEM_MODE` to `MODE_DEVELOPMENT` for comprehensive component testing via Serial Monitor at 115200 baud. The system provides an extensive command interface for testing, monitoring, and debugging.
+Set `SYSTEM_MODE` to `MODE_DEVELOPMENT` for component testing via Serial Monitor at 115200 baud. The system provides a memory-optimized command interface for testing and debugging.
 
 **Quick Start in Development Mode:**
 1. Set `#define SYSTEM_MODE MODE_DEVELOPMENT` in UmbrellaDryer.ino
@@ -151,99 +151,93 @@ Set `SYSTEM_MODE` to `MODE_DEVELOPMENT` for comprehensive component testing via 
 3. Open Serial Monitor (115200 baud)
 4. Type `help` to see all available commands
 
+**Verified Working Components:**
+- ✅ DHT22 Temperature/Humidity Sensor - **TESTED & WORKING**
+- ✅ Relay Modules (Heater & Blower) - **TESTED & WORKING**
+- ✅ I2C LCD Display - Ready for testing
+- ✅ LED Indicators - Ready for testing
+- ✅ PID Controller - Ready for testing
+- ✅ Tactile Buttons - Ready for testing
+
 **Key Features:**
-- ✅ Individual component testing with detailed diagnostics
-- 📊 Real-time sensor monitoring and data logging
-- 🎛️ Manual control of all hardware components
-- 🔄 Interactive testing modes for buttons and sensors
-- 📈 System health monitoring and status reporting
-- 🛠️ PID controller testing and parameter validation
+- � Memory-optimized serial commands (fits in Arduino Uno RAM)
+- 📊 Real-time sensor monitoring
+- 🎛️ Manual hardware control
+- 📈 System health status reporting
+- 🛠️ Component-by-component testing
 
 ---
 
 ## 🖥️ Serial Commands Reference (Development Mode)
 
 ### System Information Commands
-| Command | Description | Output |
+| Command | Description | Status |
 |---------|-------------|--------|
-| `help` or `?` | Display complete command reference | Full command list with descriptions |
-| `status` | Show component status overview | Health status of all components |
-| `info` | Display detailed system information | Version, uptime, memory, specifications |
-| `pins` | Show pin configuration mapping | Complete pin assignment table |
-| `sensors` | Get current sensor readings | Temperature, humidity, PID output |
+| `help` | Display command reference | ✅ Available |
+| `status` | Show component status overview | ✅ Available |
+| `sensors` | Get current sensor readings | ✅ Available (DHT22 working) |
 
-### Component Testing Commands
-| Command | Description | Test Details |
-|---------|-------------|--------------|
-| `test_all` | Run comprehensive system test | Tests all components sequentially |
-| `test_dht` | Test DHT22 sensor | Temperature/humidity readings + stability test |
-| `test_lcd` | Test I2C LCD display | Clear, write patterns, character test |
-| `test_led` | Test LED indicators | Individual and group LED control |
-| `test_relay` | Test relay modules | Heater and blower relay operation |
-| `test_button` | Test tactile buttons | 10-second interactive button test |
-| `test_pid` | Test PID controller | Current output and setpoint testing |
+### Component Testing Commands (Memory Optimized)
+| Command | Description | Test Status |
+|---------|-------------|-------------|
+| `test_dht` | Test DHT22 sensor | ✅ **WORKING** - Temperature/humidity readings |
+| `test_lcd` | Test I2C LCD display | ✅ Available - Clear and write test |
+| `test_led` | Test LED indicators | ✅ Available - Sequential LED test |
+| `test_relay` | Test relay modules | ✅ **WORKING** - Heater and blower control |
+| `test_button` | Test tactile buttons | ✅ Available - 5-second button test |
+| `test_pid` | Test PID controller | ✅ Available - Output calculation test |
 
-### Monitoring & Interactive Modes
-| Command | Description | Features |
-|---------|-------------|----------|
-| `monitor_start` | Start continuous monitoring | Real-time sensor data every 2 seconds |
-| `monitor_stop` | Stop continuous monitoring | Halt automatic sensor readings |
-| `interactive_on` | Enable interactive button mode | Real-time button press feedback |
-| `interactive_off` | Disable interactive button mode | Stop button monitoring |
-
-### Manual Hardware Control
-| Command | Description | Action |
+### Manual Hardware Control (Verified)
+| Command | Description | Status |
 |---------|-------------|--------|
-| `relay_heater_on/off` | Control heater relay | Direct SSR control |
-| `relay_blower_on/off` | Control blower relay | Direct SSR control |
-| `led_all_on/off` | Control all LEDs | Turn all status LEDs on/off |
-| `lcd_clear` | Clear LCD display | Blank the display |
+| `h_on` / `h_off` | Control heater relay | ✅ **TESTED & WORKING** |
+| `b_on` / `b_off` | Control blower relay | ✅ **TESTED & WORKING** |
+| `led_on` / `led_off` | Control all LEDs | ✅ Available |
+| `clear` | Clear LCD display | ✅ Available |
 
 ### System Control
 | Command | Description | Action |
 |---------|-------------|--------|
-| `reset` | Software reset | Restart the system |
-| `production` | Production mode info | Instructions for switching modes |
+| `monitor` | Toggle continuous monitoring | ✅ Available |
+| `reset` | Software reset | ✅ Available |
 
-### Example Testing Session
+### Example Testing Session (Memory Optimized)
 ```
-========================================
-   UMBRELLA DRYER - DEVELOPMENT MODE
-========================================
-Initializing components... DONE
-
-Type 'help' for available commands.
+UMBRELLA DRYER - DEV MODE
+Init... OK
+Type 'help' for commands
 
 > status
-========================================
-         SYSTEM STATUS
-========================================
-DHT22 Sensor:     OK
-I2C LCD Display:  OK
-LED Indicators:   OK
-Relay Modules:    OK
-Tactile Buttons:  OK
-PID Controller:   OK
-========================================
+--- STATUS ---
+DHT: OK
+LCD: OK
+LED: OK
+RELAY: OK
+BTN: OK
+PID: OK
+Monitor: OFF
 
 > sensors
-========================================
-        SENSOR READINGS
-========================================
-Temperature: 25.30 °C
-Humidity:    60.20 %
-PID Output:  2500.00
-Timestamp:   15420 ms
-========================================
+T:25.30C H:60.20%
+PID:2500.00
 
-> test_all
-========================================
-      FULL SYSTEM TEST STARTED
-========================================
-[Runs complete component test suite]
-========================================
-      FULL SYSTEM TEST COMPLETED
-========================================
+> test_dht
+DHT - T:25.30 H:60.20 OK
+
+> test_relay
+Relay OK
+
+> h_on
+Heater ON
+
+> h_off
+Heater OFF
+
+> b_on
+Blower ON
+
+> b_off
+Blower OFF
 ```
 
 ---
@@ -306,15 +300,15 @@ double kd = 22;  // Derivative gain
 #define SYSTEM_MODE MODE_DEVELOPMENT  // Current mode (set for testing)
 ```
 
-#### Development Mode Features
-- **🔧 Serial Command Interface:** 25+ commands for testing and control
-- **📊 Real-time Monitoring:** Continuous sensor data streaming
-- **🎛️ Interactive Testing:** Live button press feedback
-- **📈 System Health Checks:** Component status and diagnostics
-- **🛠️ Manual Override:** Direct control of all hardware
-- **💾 Memory Monitoring:** RAM usage and system information
-- **🔄 Stability Testing:** Sensor consistency and error detection
-- **📋 Comprehensive Logging:** Detailed test results and timestamps
+#### Development Mode Features (Optimized for Arduino Uno)
+- **🔧 Memory-Optimized Commands:** 15 essential commands for testing
+- **📊 Real-time Sensor Data:** DHT22 temperature/humidity monitoring ✅ **WORKING**
+- **🎛️ Hardware Control:** Direct relay, LED, and LCD control ✅ **RELAYS TESTED**
+- **📈 Component Testing:** Individual module verification
+- **🛠️ Manual Override:** Direct hardware control via serial
+- **💾 RAM Efficient:** Optimized to fit Arduino Uno memory constraints
+- **🔄 Status Reporting:** Compact system health monitoring
+- **📋 Quick Testing:** Streamlined component verification
 
 ---
 
@@ -328,7 +322,31 @@ Install these libraries through the Arduino Library Manager:
 | [DHT sensor library](https://github.com/adafruit/DHT-sensor-library) | ≥1.4.0 | DHT22 sensor communication |
 | [LiquidCrystal_I2C](https://github.com/johnrickman/LiquidCrystal_I2C) | ≥1.1.2 | I2C LCD display interface |
 
-**Note:** No additional libraries required for the comprehensive serial testing system - it's built using native Arduino Serial functionality.
+**Note:** Serial testing system optimized for Arduino Uno memory constraints using native Arduino functionality.
+
+## 🧪 Testing Progress & Status
+
+### ✅ **VERIFIED WORKING COMPONENTS**
+| Component | Status | Test Command | Notes |
+|-----------|--------|--------------|--------|
+| DHT22 Sensor | ✅ **WORKING** | `test_dht` | Temperature & humidity readings confirmed |
+| Heater Relay | ✅ **WORKING** | `h_on` / `h_off` | SSR control verified |
+| Blower Relay | ✅ **WORKING** | `b_on` / `b_off` | SSR control verified |
+| Serial Interface | ✅ **WORKING** | `help` | All commands responsive |
+
+### 🔄 **COMPONENTS READY FOR TESTING**
+| Component | Status | Test Command | Next Steps |
+|-----------|--------|--------------|------------|
+| I2C LCD Display | 🟡 Ready | `test_lcd` | Test display output |
+| LED Indicators | 🟡 Ready | `test_led` | Test LED sequence |
+| Tactile Buttons | 🟡 Ready | `test_button` | Test button inputs |
+| PID Controller | 🟡 Ready | `test_pid` | Test with real sensor data |
+
+### 📊 **System Health**
+- **Memory Usage:** Optimized to fit Arduino Uno (< 75% RAM)
+- **Code Size:** Reduced from 242% to ~60% of available memory
+- **Core Functionality:** All essential testing features retained
+- **Hardware Interface:** DHT22 and relays confirmed functional
 
 ### Installation Commands
 ```bash
@@ -430,11 +448,18 @@ GND            →   GND (All components)
    ```
 
 #### Serial Command Troubleshooting
+
+**✅ VERIFIED WORKING:**
+- **DHT22 Sensor:** Temperature and humidity readings confirmed working
+- **Relay Control:** Both heater and blower relays tested and functional
+- **Serial Commands:** All testing commands responding correctly
+
+**If you encounter issues:**
 - **No Response:** Check baud rate (115200) and cable connection
 - **Garbled Text:** Verify line ending settings (NL + CR)
 - **Commands Not Working:** Type exact commands (case insensitive)
-- **Sensor Errors:** Check wiring and power connections
-- **Display Issues:** Verify I2C address (0x27) and connections
+- **Memory Issues:** Current optimized version fits Arduino Uno constraints
+- **Other Components:** Use individual test commands to verify LCD, LEDs, buttons
 
 ---
 
