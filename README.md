@@ -115,7 +115,34 @@ UmbrellaDryer/
 └── 📖 README.md              # Project documentation
 ```
 
----
+
+## 🖼️ 3D Model: Umbrella Holder Board Case
+
+<div align="center">
+   <img src="model/Umbrella_Holder_Board_Case.png" alt="Umbrella Holder Board Case 3D Model" width="400"/>
+</div>
+
+### Model Description
+The image above shows the 3D model of the custom Umbrella Holder Board Case. This enclosure is designed to securely house the main electronics, relays, and wiring for the automated umbrella dryer system. The model is available as an STL file for 3D printing and as a PNG for quick reference.
+
+**Key Features:**
+- Custom-fit for all electronics and relays
+- Ventilation slots for airflow and cooling
+- Mounting points for secure installation
+- Easy access for wiring and maintenance
+
+**Files:**
+- `model/Umbrella_Holder_Board_Case.stl` — 3D printable model
+- `model/Umbrella_Holder_Board_Case.png` — Rendered preview
+
+### To-Do for Model Usage
+- [ ] Download the STL file from the `model/` directory
+- [ ] Print the case using a 3D printer (recommended: PLA or ABS)
+- [ ] Test-fit all electronics and relays before final assembly
+- [ ] Ensure ventilation slots are unobstructed
+- [ ] Secure the case in your installation location
+
+For any modifications or customizations, edit the STL file using your preferred CAD software.
 
 ## ⚙️ System Operation
 
