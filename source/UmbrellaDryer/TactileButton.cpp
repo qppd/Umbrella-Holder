@@ -1,10 +1,18 @@
 #include "TactileButton.h"
 
+// Forward declaration for SYSTEM_MODE
+#ifndef SYSTEM_MODE
+#define MODE_DEVELOPMENT 1
+#define MODE_PRODUCTION 2
+#define SYSTEM_MODE MODE_DEVELOPMENT
+#endif
+
 TactileButton::TactileButton() : first_time(true) {
     for (int i = 0; i < BUTTON_COUNT; i++) {
         inputState[i] = LOW;
         lastInputState[i] = LOW;
         inputFlags[i] = LOW;
+        buttonPressed[i] = false;
         lastDebounceTime[i] = 0;
     }
 }
@@ -19,7 +27,12 @@ void TactileButton::init() {
 }
 
 void TactileButton::inputAction(int BUTTON_PIN) {
+    #if SYSTEM_MODE == MODE_DEVELOPMENT
     Serial.println(BUTTON_PIN);
+    #else
+    // Production mode button actions will be handled in main loop
+    // Set flags for main program to process
+    #endif
 }
 
 void TactileButton::setInputFlags() {
@@ -47,8 +60,20 @@ void TactileButton::resolveInputFlags() {
                 first_time = false;
             } else {
                 inputAction(i);
+                #if SYSTEM_MODE == MODE_PRODUCTION
+                buttonPressed[i] = true; // Set flag for main program
+                #endif
             }
             inputFlags[i] = LOW;
         }
     }
+}
+
+bool TactileButton::getButtonPressed(int buttonIndex) {
+    if (buttonIndex >= 0 && buttonIndex < BUTTON_COUNT) {
+        bool pressed = buttonPressed[buttonIndex];
+        buttonPressed[buttonIndex] = false; // Clear flag
+        return pressed;
+    }
+    return false;
 }

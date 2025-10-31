@@ -1,21 +1,31 @@
 #include "PidController.h"
 
+// Forward declaration for SYSTEM_MODE
+#ifndef SYSTEM_MODE
+#define MODE_DEVELOPMENT 1
+#define MODE_PRODUCTION 2
+#define SYSTEM_MODE MODE_DEVELOPMENT
+#endif
+
 PidController::PidController(double kp, double ki, double kd, double setpoint)
     : kp(kp), ki(ki), kd(kd), output(0), currentTemperature(0), setpoint(setpoint),
       pid(&currentTemperature, &output, &this->setpoint, kp, ki, kd, DIRECT) {}
 
 void PidController::init() {
     pid.SetMode(AUTOMATIC);
-    pid.SetOutputLimits(0, 5000);
+    pid.SetOutputLimits(0, 255); // 0-255 for PWM-style control
 }
 
 void PidController::compute() {
     pid.Compute();
-    if (output > 0) {
+    // Remove debug output in production mode
+    #if SYSTEM_MODE == MODE_DEVELOPMENT
+    if (output > 128) {
         Serial.println("Opening Heater");
     } else {
         Serial.println("Closing Heater");
     }
+    #endif
 }
 
 void PidController::setCurrentTemperature(double temp) {

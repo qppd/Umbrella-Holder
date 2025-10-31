@@ -26,9 +26,30 @@ bool serialComplete = false;
 // Production mode variables
 const unsigned long DRYING_DURATION = 8UL * 60UL * 1000UL; // 8 minutes in ms
 const double HEATER_SETPOINT = 60.0;
+const double MIN_SAFE_TEMP = -10.0; // Minimum valid temperature
+const double MAX_SAFE_TEMP = 80.0;  // Maximum safe temperature
+const unsigned long DISPLAY_UPDATE_INTERVAL = 1000; // 1 second
+const unsigned long SENSOR_TIMEOUT = 5000; // 5 seconds for sensor timeout
 
+// System states
+enum SystemState {
+  STATE_STANDBY,
+  STATE_STARTING,
+  STATE_DRYING,
+  STATE_COMPLETED,
+  STATE_ERROR,
+  STATE_EMERGENCY_STOP
+};
+
+SystemState currentState = STATE_STANDBY;
 bool dryingActive = false;
 unsigned long dryingStartTime = 0;
+unsigned long lastDisplayUpdate = 0;
+unsigned long lastSensorRead = 0;
+bool displayMode = 0; // 0: Status, 1: Detailed
+double targetTemperature = HEATER_SETPOINT;
+bool emergencyStop = false;
+int sensorErrorCount = 0;
 
 // Testing variables
 bool continuousMonitoring = false;
@@ -48,9 +69,13 @@ struct SystemStatus {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println(F("UMBRELLA DRYER - DEV MODE"));
   
+#if SYSTEM_MODE == MODE_DEVELOPMENT
+  Serial.println(F("UMBRELLA DRYER - DEV MODE"));
   Serial.print(F("Init... "));
+#else
+  Serial.println(F("UMBRELLA DRYER - PRODUCTION MODE"));
+#endif
   
   buttons.init();
   systemStatus.buttonsOk = true;
@@ -72,12 +97,19 @@ void setup() {
   pid.init();
   systemStatus.pidOk = true;
 
+#if SYSTEM_MODE == MODE_DEVELOPMENT
   Serial.println(F("OK"));
-  
   lcd.setText("DEV MODE", 0, 0);
   lcd.setText("Type help", 0, 1);
-  
   Serial.println(F("Type 'help' for commands"));
+#else
+  lcd.setText("UMBRELLA DRYER", 0, 0);
+  lcd.setText("Initializing...", 0, 1);
+  delay(2000);
+  lcd.clear();
+  lcd.setText("READY", 0, 0);
+  lcd.setText("Press BTN1 to start", 0, 1);
+#endif
   
   // Clear input buffer
   memset(serialInput, 0, sizeof(serialInput));
@@ -119,50 +151,263 @@ void loop() {
   }
   
 #else
-  // PRODUCTION: Full system logic
-  // Start drying cycle on boot if not already started
-  if (!dryingActive) {
-    dryingActive = true;
-    dryingStartTime = millis();
-    // Turn on blower and heater
-    relays.set(RELAY_BLOWER, true); // Blower always ON during drying
-    relays.set(RELAY_HEATER, true); // Heater ON, will be PID controlled
-    leds.set(LED_1, true); // Example: indicate drying
-    leds.set(LED_2, true);
-    leds.set(LED_3, true);
-    pid.setSetpoint(HEATER_SETPOINT);
-    lcd.setText("Drying...", 0, 0);
+  // PRODUCTION: Full system logic with state machine
+  
+  // Always check buttons for user input
+  buttons.setInputFlags();
+  buttons.resolveInputFlags();
+  
+  // Handle button presses
+  handleButtonPresses();
+  
+  // Update sensors and safety checks
+  updateSensorsAndSafety();
+  
+  // State machine logic
+  switch (currentState) {
+    case STATE_STANDBY:
+      handleStandbyState();
+      break;
+    case STATE_STARTING:
+      handleStartingState();
+      break;
+    case STATE_DRYING:
+      handleDryingState();
+      break;
+    case STATE_COMPLETED:
+      handleCompletedState();
+      break;
+    case STATE_ERROR:
+      handleErrorState();
+      break;
+    case STATE_EMERGENCY_STOP:
+      handleEmergencyStopState();
+      break;
   }
+  
+  // Update display
+  if (millis() - lastDisplayUpdate >= DISPLAY_UPDATE_INTERVAL) {
+    updateDisplay();
+    lastDisplayUpdate = millis();
+  }
+  
+#endif
+}
 
-  // During drying
-  if (dryingActive) {
-    float temp = dht.getTemperature();
+// ========================================
+//        PRODUCTION MODE FUNCTIONS
+// ========================================
+
+void handleButtonPresses() {
+  // Button 1: Start/Stop cycle
+  if (buttons.getButtonPressed(0)) {
+    if (currentState == STATE_STANDBY) {
+      startDryingCycle();
+    } else if (currentState == STATE_DRYING) {
+      stopDryingCycle();
+    }
+  }
+  
+  // Button 2: Toggle display mode
+  if (buttons.getButtonPressed(1)) {
+    displayMode = !displayMode;
+  }
+  
+  // Button 3: Temperature adjustment (±5°C)
+  if (buttons.getButtonPressed(2)) {
+    if (currentState == STATE_STANDBY) {
+      targetTemperature += 5.0;
+      if (targetTemperature > 70.0) targetTemperature = 50.0; // Cycle 50-70°C
+    }
+  }
+  
+  // Button 4: Emergency stop
+  if (buttons.getButtonPressed(3)) {
+    emergencyStop = true;
+    currentState = STATE_EMERGENCY_STOP;
+  }
+}
+
+void updateSensorsAndSafety() {
+  float temp = dht.getTemperature();
+  float hum = dht.getHumidity();
+  
+  // Check sensor validity
+  if (temp == -1 || hum == -1) {
+    sensorErrorCount++;
+    if (sensorErrorCount > 3) {
+      currentState = STATE_ERROR;
+      return;
+    }
+  } else {
+    sensorErrorCount = 0;
+  }
+  
+  // Safety temperature checks
+  if (temp < MIN_SAFE_TEMP || temp > MAX_SAFE_TEMP) {
+    currentState = STATE_ERROR;
+    return;
+  }
+  
+  // Update PID controller
+  if (currentState == STATE_DRYING) {
     pid.setCurrentTemperature(temp);
     pid.compute();
+    
+    // Use PID output for heater control (simplified)
     double pidOutput = pid.getOutput();
+    bool heaterOn = (pidOutput > 128); // Threshold-based for SSR
+    relays.set(RELAY_HEATER, heaterOn);
+  }
+}
 
-    // Heater relay PID control (simple ON/OFF for SSR)
-    if (temp < HEATER_SETPOINT - 1) {
-      relays.set(RELAY_HEATER, true); // Turn heater ON
-    } else if (temp > HEATER_SETPOINT + 1) {
-      relays.set(RELAY_HEATER, false); // Turn heater OFF
+void startDryingCycle() {
+  currentState = STATE_STARTING;
+  dryingActive = true;
+  dryingStartTime = millis();
+  pid.setSetpoint(targetTemperature);
+  
+  // Turn on systems
+  relays.set(RELAY_BLOWER, true);
+  leds.set(LED_1, true);
+  leds.set(LED_2, true);
+  leds.set(LED_3, true);
+}
+
+void stopDryingCycle() {
+  currentState = STATE_COMPLETED;
+  dryingActive = false;
+  
+  // Turn off everything
+  relays.set(RELAY_HEATER, false);
+  relays.set(RELAY_BLOWER, false);
+  leds.set(LED_1, false);
+  leds.set(LED_2, false);
+  leds.set(LED_3, false);
+}
+
+void handleStandbyState() {
+  // System ready, waiting for user input
+  leds.set(LED_1, false);
+  leds.set(LED_2, false);
+  leds.set(LED_3, false);
+  relays.set(RELAY_HEATER, false);
+  relays.set(RELAY_BLOWER, false);
+}
+
+void handleStartingState() {
+  // Brief startup phase
+  currentState = STATE_DRYING;
+}
+
+void handleDryingState() {
+  // Check if drying time is over
+  if (millis() - dryingStartTime >= DRYING_DURATION) {
+    stopDryingCycle();
+  }
+  
+  // Keep blower running
+  relays.set(RELAY_BLOWER, true);
+}
+
+void handleCompletedState() {
+  // Cycle complete, stay here until reset or new cycle
+  static unsigned long completedTime = millis();
+  
+  // Flash LED to indicate completion
+  if ((millis() - completedTime) % 1000 < 500) {
+    leds.set(LED_1, true);
+  } else {
+    leds.set(LED_1, false);
+  }
+}
+
+void handleErrorState() {
+  // Error state - flash all LEDs
+  relays.set(RELAY_HEATER, false);
+  relays.set(RELAY_BLOWER, false);
+  
+  static unsigned long errorTime = millis();
+  bool flashState = (millis() - errorTime) % 500 < 250;
+  leds.set(LED_1, flashState);
+  leds.set(LED_2, flashState);
+  leds.set(LED_3, flashState);
+  
+  // Allow restart after 10 seconds
+  if (millis() - errorTime > 10000) {
+    currentState = STATE_STANDBY;
+    sensorErrorCount = 0;
+  }
+}
+
+void handleEmergencyStopState() {
+  // Emergency stop - everything off
+  relays.set(RELAY_HEATER, false);
+  relays.set(RELAY_BLOWER, false);
+  leds.set(LED_1, false);
+  leds.set(LED_2, false);
+  leds.set(LED_3, false);
+  
+  // Require manual reset
+  if (buttons.getButtonPressed(0) && buttons.getButtonPressed(1)) {
+    emergencyStop = false;
+    currentState = STATE_STANDBY;
+  }
+}
+
+void updateDisplay() {
+  lcd.clear();
+  
+  float temp = dht.getTemperature();
+  float hum = dht.getHumidity();
+  
+  if (displayMode == 0) {
+    // Status display
+    switch (currentState) {
+      case STATE_STANDBY:
+        lcd.setText("READY - Press BTN1", 0, 0);
+        lcd.setText("Target: ", 0, 1);
+        lcd.setText(targetTemperature, 8, 1);
+        lcd.setText("C", 13, 1);
+        break;
+      case STATE_DRYING:
+        lcd.setText("DRYING...", 0, 0);
+        unsigned long remaining = (DRYING_DURATION - (millis() - dryingStartTime)) / 1000;
+        lcd.setText("Time: ", 0, 1);
+        lcd.setText((int)(remaining / 60), 6, 1);
+        lcd.setText(":", 8, 1);
+        lcd.setText((int)(remaining % 60), 9, 1);
+        break;
+      case STATE_COMPLETED:
+        lcd.setText("CYCLE COMPLETE!", 0, 0);
+        lcd.setText("Press BTN1 for new", 0, 1);
+        break;
+      case STATE_ERROR:
+        lcd.setText("ERROR - CHECK SYS", 0, 0);
+        lcd.setText("Wait 10s to reset", 0, 1);
+        break;
+      case STATE_EMERGENCY_STOP:
+        lcd.setText("EMERGENCY STOP", 0, 0);
+        lcd.setText("BTN1+BTN2 to reset", 0, 1);
+        break;
     }
-    // Blower always ON during drying
-    relays.set(RELAY_BLOWER, true);
-
-    // Check if drying time is over
-    if (millis() - dryingStartTime >= DRYING_DURATION) {
-      // Stop everything
-      relays.set(RELAY_HEATER, false);
-      relays.set(RELAY_BLOWER, false);
-      leds.set(LED_1, false);
-      leds.set(LED_2, false);
-      leds.set(LED_3, false);
-      lcd.setText("Done!", 0, 0);
-      dryingActive = false;
+  } else {
+    // Detailed display
+    lcd.setText("T:", 0, 0);
+    lcd.setText(temp, 2, 0);
+    lcd.setText("C H:", 7, 0);
+    lcd.setText(hum, 10, 0);
+    lcd.setText("%", 15, 0);
+    
+    if (currentState == STATE_DRYING) {
+      lcd.setText("PID:", 0, 1);
+      lcd.setText(pid.getOutput(), 4, 1);
+      lcd.setText(" H:", 9, 1);
+      lcd.setText(digitalRead(RELAY_HEATER) ? "ON" : "OFF", 12, 1);
+    } else {
+      lcd.setText("BTN2: Toggle view", 0, 1);
     }
   }
-#endif
 }
 
 // ========================================
