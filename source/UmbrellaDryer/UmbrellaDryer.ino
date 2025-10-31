@@ -54,7 +54,6 @@ int sensorErrorCount = 0;
 // Testing variables
 bool continuousMonitoring = false;
 bool interactiveMode = false;
-unsigned long lastSensorRead = 0;
 const unsigned long SENSOR_READ_INTERVAL = 2000; // 2 seconds
 
 // System status variables
