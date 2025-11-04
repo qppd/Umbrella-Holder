@@ -17,9 +17,4 @@
 #define RELAY_HEATER 8
 #define RELAY_BLOWER 9
 
-// LEDs
-#define LED_1 2
-#define LED_2 3
-#define LED_3 11
-
 #endif // PINS_H

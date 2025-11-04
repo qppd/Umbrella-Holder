@@ -63,7 +63,6 @@ The Umbrella Dryer is a sophisticated IoT solution designed to efficiently dry m
 | **Timed Operation** | 8-minute countdown timer with MM:SS display | ✅ Complete |
 | **Anti-Flicker LCD** | 20x4 LCD with smart update system (no screen blinking) | ✅ Complete |
 | **Button Listener** | Continuous 4-button monitoring in production mode | ✅ Complete |
-| **LED Indicators** | Smart visual feedback with multiple status patterns | ✅ Complete |
 | **Environmental Monitoring** | Real-time temperature and humidity tracking (500ms updates) | ✅ Complete |
 | **Relay Control** | Dual SSR system for heater and blower management | ✅ Complete |
 | **Safety Systems** | Comprehensive error detection and emergency controls | ✅ Complete |
@@ -132,14 +131,13 @@ cd Umbrella-Holder
 | **Display** | I2C LCD 20x4 | 1 | User interface | I2C address 0x27 |
 | **Solid State Relays** | 10A SSR | 2 | Power switching | Heater & blower control |
 | **Push Buttons** | Tactile switches | 4 | User input | 50ms debounce |
-| **Status LEDs** | 5mm LEDs | 3 | Visual feedback | Red, Green, Blue |
 | **Heating Element** | 500W max | 1 | Drying mechanism | Safety rated |
 | **Blower Fan** | 12V DC | 1 | Air circulation | Variable speed |
 
 #### Supporting Components
 | Component | Specification | Quantity | Purpose |
 |-----------|---------------|----------|---------|
-| **Resistors** | 220Ω, 10kΩ | 7 | LED current limiting, pull-ups |
+| **Resistors** | 10kΩ | 4 | Button pull-ups |
 | **Capacitors** | 100nF ceramic | 4 | Noise filtering |
 | **Wire** | 22 AWG | As needed | Connections |
 | **Connectors** | Screw terminals | 8 | Secure connections |
@@ -155,11 +153,6 @@ cd Umbrella-Holder
 #define RELAY_HEATER 8   // Heater SSR control
 #define RELAY_BLOWER 9   // Blower SSR control
 #define DHTPIN      10   // DHT22 data pin
-
-// LED Status Indicators
-#define LED_1       2    // System status
-#define LED_2       3    // Cycle progress
-#define LED_3       11   // Error indication
 
 // I2C Communication (Fixed pins on Uno)
 // SDA - Pin A4 (LCD Data)
@@ -208,8 +201,6 @@ Install required libraries via Library Manager (`Sketch > Include Library > Mana
 ```
 Arduino Uno    →    Component
 ─────────────────────────────────
-Pin 2          →    LED 1 (220Ω resistor)
-Pin 3          →    LED 2 (220Ω resistor)
 Pin 4          →    Button 1 (10kΩ pull-up)
 Pin 5          →    Button 2 (10kΩ pull-up)
 Pin 6          →    Button 3 (10kΩ pull-up)
@@ -217,7 +208,6 @@ Pin 7          →    Button 4 (10kΩ pull-up)
 Pin 8          →    Heater SSR (control)
 Pin 9          →    Blower SSR (control)
 Pin 10         →    DHT22 (data)
-Pin 11         →    LED 3 (220Ω resistor)
 Pin A4 (SDA)   →    LCD SDA
 Pin A5 (SCL)   →    LCD SCL
 GND            →    Common ground
@@ -266,7 +256,6 @@ GND            →    Common ground
    test_dht     - Verify temperature sensor
    test_lcd     - Check display functionality
    test_relay   - Test heater/blower relays
-   test_led     - Verify LED indicators
    test_button  - Test button responsiveness
    ```
 
@@ -353,9 +342,6 @@ double kd = 22.0;   // Derivative gain
 // Output pins
 #define RELAY_HEATER 8  // Heater control
 #define RELAY_BLOWER 9  // Blower control
-#define LED_1 2         // Status indicator
-#define LED_2 3         // Progress indicator
-#define LED_3 11        // Error indicator
 
 // I2C pins (hardware defined)
 // SDA - Pin A4
@@ -397,14 +383,14 @@ PidController::PidController(double kp, double ki, double kd, double setpoint)
 ### Production Mode Operation
 
 #### System States Overview
-| State | Description | LED Pattern | Display |
-|-------|-------------|-------------|---------|
-| **Standby** | Ready for operation | All OFF | "READY - Press BTN1" |
-| **Starting** | Initializing cycle | All ON | "Starting..." |
-| **Drying** | Active cycle running | All ON solid | "DRYING..." + timer |
-| **Completed** | Cycle finished | LED1 flashing | "CYCLE COMPLETE!" |
-| **Error** | System fault detected | All flashing | "ERROR - CHECK SYS" |
-| **Emergency** | Emergency stop active | All OFF | "EMERGENCY STOP" |
+| State | Description | Display |
+|-------|-------------|---------|
+| **Standby** | Ready for operation | "READY - Press BTN1" |
+| **Starting** | Initializing cycle | "Starting..." |
+| **Drying** | Active cycle running | "DRYING..." + timer |
+| **Completed** | Cycle finished | "CYCLE COMPLETE!" |
+| **Error** | System fault detected | "ERROR - CHECK SYS" |
+| **Emergency** | Emergency stop active | "EMERGENCY STOP" |
 
 #### Control Interface
 
@@ -489,25 +475,20 @@ The 20x4 LCD display features an intelligent update system that prevents flicker
 1. **System Startup**
    - Power on system
    - Wait for "READY" display
-   - Verify all LEDs are OFF
 
 2. **Pre-Cycle Setup**
-   - Press Button 3 to adjust temperature if needed
-   - Press Button 2 to select preferred display mode
+   - Press Button 3/4 to adjust temperature if needed (shows setpoint for 5 seconds)
    - Ensure umbrellas are properly positioned
 
 3. **Start Drying Cycle**
    - Press Button 1 to begin
-   - Verify LEDs illuminate (all ON)
-   - Monitor display for cycle progress
+   - Monitor LCD display for cycle progress
 
 4. **During Operation**
-   - Monitor temperature and humidity readings
-   - Use Button 2 to toggle display information
+   - Monitor temperature and humidity readings on LCD
    - System automatically manages heating and airflow
 
 5. **Cycle Completion**
-   - LED 1 flashes to indicate completion
    - Display shows "CYCLE COMPLETE!"
    - All heating and blower systems shut down
 
@@ -519,16 +500,9 @@ The 20x4 LCD display features an intelligent update system that prevents flicker
 ##### Emergency Procedures
 
 **Emergency Stop Activation**
-1. Press Button 4 (Emergency Stop)
+1. Press Button 2 (Stop button)
 2. All systems immediately shut down
-3. Display shows "EMERGENCY STOP"
-4. LEDs turn OFF
-
-**Emergency Reset**
-1. Simultaneously press and hold Button 1 + Button 2
-2. Hold for 2 seconds until display changes
-3. System returns to standby mode
-4. Verify all systems operational before resuming
+3. Display shows "STOPPED" and returns to standby
 
 #### Safety Guidelines
 
@@ -581,7 +555,6 @@ The 20x4 LCD display features an intelligent update system that prevents flicker
 |---------|----------|-------------|
 | `test_dht` | DHT22 sensor test | Temperature/humidity reading |
 | `test_lcd` | LCD display test | "LCD TEST" message |
-| `test_led` | LED indicator test | Sequential LED activation |
 | `test_relay` | Relay module test | Heater/blower activation |
 | `test_button` | Button response test | 5-second input monitoring |
 | `test_pid` | PID controller test | Output calculation |
@@ -591,7 +564,6 @@ The 20x4 LCD display features an intelligent update system that prevents flicker
 |---------|----------|--------|
 | `h_on` / `h_off` | Heater control | Manual heater relay |
 | `b_on` / `b_off` | Blower control | Manual blower relay |
-| `led_on` / `led_off` | LED control | All LEDs on/off |
 | `monitor` | Toggle monitoring | Continuous sensor display |
 | `clear` | Clear display | LCD screen clear |
 | `reset` | System restart | Software reset |
@@ -613,7 +585,6 @@ The 20x4 LCD display features an intelligent update system that prevents flicker
 # Individual component testing
 > test_lcd        # Verify display
 > test_relay      # Check SSR operation
-> test_led        # Confirm LED function
 > test_button     # Validate input response
 > test_pid        # Verify control algorithm
 ```
@@ -645,7 +616,6 @@ UmbrellaDryer/
 ├── UmbrellaDryer.ino      # Main application logic
 ├── DhtSensor.cpp/.h       # Temperature/humidity interface
 ├── I2cDisplay.cpp/.h      # LCD display management
-├── LedIndicator.cpp/.h    # LED status control
 ├── PidController.cpp/.h   # Temperature control algorithms
 ├── RelayModule.cpp/.h     # SSR abstraction layer
 ├── TactileButton.cpp/.h   # Button input handling
@@ -657,7 +627,6 @@ UmbrellaDryer/
 ##### Core Components
 - **DhtSensor**: Environmental monitoring with error handling
 - **I2cDisplay**: Multi-mode LCD interface with data type overloads
-- **LedIndicator**: Status indication with pattern support
 - **PidController**: Temperature regulation with tunable parameters
 - **RelayModule**: Power switching with safety interlocks
 - **TactileButton**: Input processing with debouncing and dual-mode operation
@@ -800,24 +769,6 @@ public:
 - **Dual Mode**: Development and production operation
 - **Flag System**: Non-blocking button state management
 
-#### LedIndicator Class
-**Purpose**: Visual status indication with pattern support
-
-```cpp
-class LedIndicator {
-public:
-    LedIndicator();                           // Constructor
-    void init();                              // Initialize LEDs
-    void set(uint16_t led, bool state);       // Control LED state
-};
-```
-
-**LED Patterns**:
-- **Solid ON**: Active operation
-- **Flashing**: Cycle completion
-- **Rapid Flash**: Error conditions
-- **OFF**: Standby/emergency states
-
 ### System Constants
 
 #### Pin Definitions (Pins.h)
@@ -833,9 +784,6 @@ public:
 
 // Relay outputs  
 #define RELAY_HEATER 8    #define RELAY_BLOWER 9
-
-// LED outputs
-#define LED_1 2    #define LED_2 3    #define LED_3 11
 ```
 
 #### System States
@@ -875,7 +823,6 @@ enum SystemState {
 > test_dht        # Sensor validation
 > test_lcd        # Display verification  
 > test_relay      # SSR functionality
-> test_led        # Visual indicators
 > test_button     # Input responsiveness
 > test_pid        # Control algorithm
 ```
@@ -902,13 +849,6 @@ LCD TEST - Display output OK
 Relay OK
 ```
 **Success Criteria**: Audible relay switching, no error messages
-
-##### LED Indicator Test
-```
-> test_led
-LED OK
-```
-**Success Criteria**: Sequential LED activation (LED1 → LED2 → LED3 → All OFF)
 
 ##### Button Response Test
 ```
@@ -996,7 +936,7 @@ PID - T:23.5 Out:255.0
 ### Common Issues
 
 #### System Won't Start
-**Symptoms**: No display, no LED activity
+**Symptoms**: No display activity
 **Causes**: 
 - Power supply failure
 - Arduino board malfunction
@@ -1004,7 +944,7 @@ PID - T:23.5 Out:255.0
 
 **Solutions**:
 1. Verify power connections (5V, 12V, GND)
-2. Check Arduino board LED indicators
+2. Check Arduino board power LED
 3. Measure voltages with multimeter
 4. Inspect all wiring connections
 
@@ -1121,7 +1061,6 @@ PID - T:23.5 Out:255.0
 > test_dht        # Isolate sensor issues
 > test_lcd        # Display problems
 > test_relay      # Relay functionality
-> test_led        # Visual indicators
 ```
 
 #### Advanced Diagnostics
@@ -1189,7 +1128,6 @@ UmbrellaDryer/
 ├── 📄 UmbrellaDryer.ino      # Main application logic & system control
 ├── 🌡️ DhtSensor.cpp/.h       # DHT22 temperature/humidity interface
 ├── 📺 I2cDisplay.cpp/.h      # LCD display management
-├── 💡 LedIndicator.cpp/.h    # LED status indicator control
 ├── 🎛️ PidController.cpp/.h   # PID algorithm for heater control
 ├── 🔌 RelayModule.cpp/.h     # Solid state relay abstraction
 ├── 🔘 TactileButton.cpp/.h   # Button input handling & debouncing
@@ -1242,15 +1180,9 @@ For any modifications or customizations, edit the STL file using your preferred 
 - **Completed**: Completion message with prompt for new cycle
 - **Error/Emergency**: Status message with recovery instructions
 
-**LED Indicators:**
-- **All LEDs ON**: Active drying cycle
-- **LED 1 Flashing**: Cycle completed successfully
-- **All LEDs Flashing**: System error (auto-recovery in 10 seconds)
-- **All LEDs OFF**: Emergency stop or standby mode
-
 ### 🔄 Operation Flow
 1. **System Initialization**
-   - All modules initialize (sensors, relays, display, LEDs)
+   - All modules initialize (sensors, relays, display)
    - **Development Mode**: LCD displays "DEV MODE" and commands available via Serial
    - **Production Mode**: LCD displays "UMBRELLA DRYER" with real-time temp/humidity
 
@@ -1266,7 +1198,6 @@ For any modifications or customizations, edit the STL file using your preferred 
    - **Smart Temperature Control**: PID-controlled heating with user-adjustable setpoint
    - **Blower**: Activates immediately and runs for full cycle duration
    - **Safety Features**: Temperature range validation, sensor error detection
-   - **LEDs**: All three indicators illuminate during operation
    - **Display**: Shows countdown timer (MM:SS), real-time temp & humidity without flickering
 
 4. **Enhanced LCD Display**
@@ -1284,7 +1215,6 @@ For any modifications or customizations, edit the STL file using your preferred 
 
 6. **Cycle Completion**
    - After 8 minutes: All relays turn OFF, completion indication
-   - Flashing LED indicates cycle complete
    - LCD displays "CYCLE COMPLETE!" message
    - System ready for new cycle
 
@@ -1321,7 +1251,6 @@ Set `SYSTEM_MODE` to `MODE_DEVELOPMENT` for component testing via Serial Monitor
 - ✅ DHT22 Temperature/Humidity Sensor - **TESTED & WORKING**
 - ✅ Relay Modules (Heater & Blower) - **TESTED & WORKING**
 - ✅ I2C LCD Display - **TESTED & WORKING**
-- ✅ LED Indicators - **TESTED & WORKING**
 - ✅ PID Controller - **TESTED & WORKING**
 - ✅ Tactile Buttons - **TESTED & WORKING**
 
@@ -1371,7 +1300,6 @@ Set `SYSTEM_MODE` to `MODE_DEVELOPMENT` for component testing via Serial Monitor
 |---------|-------------|-------------|
 | `test_dht` | Test DHT22 sensor | ✅ **WORKING** - Temperature/humidity readings |
 | `test_lcd` | Test I2C LCD display | ✅ **WORKING** - Clear and write test |
-| `test_led` | Test LED indicators | ✅ Available - Sequential LED test |
 | `test_relay` | Test relay modules | ✅ **WORKING** - Heater and blower control |
 | `test_button` | Test tactile buttons | ✅ Available - 5-second button test |
 | `test_pid` | Test PID controller | ✅ Available - Output calculation test |
@@ -1381,7 +1309,6 @@ Set `SYSTEM_MODE` to `MODE_DEVELOPMENT` for component testing via Serial Monitor
 |---------|-------------|--------|
 | `h_on` / `h_off` | Control heater relay | ✅ **TESTED & WORKING** |
 | `b_on` / `b_off` | Control blower relay | ✅ **TESTED & WORKING** |
-| `led_on` / `led_off` | Control all LEDs | ✅ Available |
 | `clear` | Clear LCD display | ✅ Available |
 
 ### System Control
@@ -1400,7 +1327,6 @@ Type 'help' for commands
 --- STATUS ---
 DHT: OK
 LCD: OK
-LED: OK
 RELAY: OK
 BTN: OK
 PID: OK
@@ -1461,17 +1387,11 @@ Blower OFF
 - **Methods**: `init()`, `set(relay, state)`
 - **Safety**: Automatic shutoff on sensor failure and emergency stop
 
-#### 💡 LedIndicator
-- **Purpose**: Smart visual system status feedback and user guidance
-- **Features**: 3 LED status indicators with multiple display patterns
-- **Methods**: `init()`, `set(ledPin, state)`
-- **Patterns**: Solid (active cycle), Flashing (completion), Rapid flash (error), Off (standby/emergency)
-
-#### 🔘 TactileButton
+####  TactileButton
 - **Purpose**: Complete user interaction and system control
 - **Features**: 4 buttons with debouncing, dual-mode operation (dev/production)
 - **Methods**: `init()`, `setInputFlags()`, `resolveInputFlags()`, `getButtonPressed()`
-- **Functions**: Start/stop, display toggle, temperature adjust, emergency stop
+- **Functions**: Start/stop, temperature adjust
 
 ---
 
@@ -1522,7 +1442,7 @@ double kd = 22;  // Derivative gain
 #### Development Mode Features (Optimized for Arduino Uno)
 - **🔧 Memory-Optimized Commands:** 15 essential commands for testing
 - **📊 Real-time Sensor Data:** DHT22 temperature/humidity monitoring ✅ **WORKING**
-- **🎛️ Hardware Control:** Direct relay, LED, and LCD control ✅ **RELAYS TESTED**
+- **🎛️ Hardware Control:** Direct relay and LCD control ✅ **RELAYS TESTED**
 - **📈 Component Testing:** Individual module verification
 - **🛠️ Manual Override:** Direct hardware control via serial
 - **💾 RAM Efficient:** Optimized to fit Arduino Uno memory constraints
@@ -1566,25 +1486,23 @@ double kd = 22;  // Derivative gain
 
 **Starting a Drying Cycle:**
 1. Press **Button 1** to start cycle
-2. System enters drying mode with all LEDs on
+2. System enters drying mode
 3. Blower activates immediately
 4. Heater engages with PID temperature control
 5. Display shows cycle progress and time remaining
 
 **During Operation:**
-- **Button 2**: Toggle between Status and Detailed display modes
-- **Button 3**: Adjust target temperature (only in standby)
-- **Button 4**: Emergency stop (immediate shutdown)
+- **Button 2**: Stop drying cycle
+- **Button 3**: Increase temperature (+5°C, anytime, shows setpoint for 5s)
+- **Button 4**: Decrease temperature (-5°C, anytime, shows setpoint for 5s)
 
 **Cycle Completion:**
 - After 8 minutes, system automatically stops
-- LED 1 flashes to indicate completion
 - Display shows "CYCLE COMPLETE"
 - Press Button 1 to start new cycle
 
 **Emergency Procedures:**
-- **Emergency Stop**: Press Button 4 for immediate shutdown
-- **Reset**: Hold Button 1 + Button 2 simultaneously to reset from emergency stop
+- **Stop Cycle**: Press Button 2 for immediate stop
 - **Error Recovery**: System auto-recovers from sensor errors after 10 seconds
 
 ### 📊 Display Information
@@ -1635,7 +1553,6 @@ Install these libraries through the Arduino Library Manager:
 ### 🔄 **COMPONENTS READY FOR TESTING**
 | Component | Status | Test Command | Next Steps |
 |-----------|--------|--------------|------------|
-| LED Indicators | 🟡 Ready | `test_led` | Test LED sequence |
 | Tactile Buttons | 🟡 Ready | `test_button` | Test button inputs |
 | PID Controller | 🟡 Ready | `test_pid` | Test with real sensor data |
 
@@ -1668,8 +1585,6 @@ arduino-cli lib install "LiquidCrystal I2C"
 ```
 Arduino Uno/Nano    Component
 ================    =========
-Digital Pin 2   →   LED 1 (Status)
-Digital Pin 3   →   LED 2 (Status)  
 Digital Pin 4   →   Button 1
 Digital Pin 5   →   Button 2
 Digital Pin 6   →   Button 3
@@ -1677,7 +1592,6 @@ Digital Pin 7   →   Button 4
 Digital Pin 8   →   SSR Heater Control
 Digital Pin 9   →   SSR Blower Control
 Digital Pin 10  →   DHT22 Data Pin
-Digital Pin 11  →   LED 3 (Status)
 Analog Pin A4   →   LCD SDA (I2C)
 Analog Pin A5   →   LCD SCL (I2C)
 5V             →   VCC (All components)
@@ -1706,11 +1620,6 @@ GND            →   GND (All components)
 - Verify pin connections
 - Use `test_button` for diagnostics
 
-#### 💡 LEDs Not Working
-- Verify LED polarity and current limiting resistors
-- Test individual LEDs with `test_led`
-- Check pin assignments in Pins.h
-
 ### 🔍 Development Mode Testing
 
 #### Setting Up Serial Testing
@@ -1736,7 +1645,6 @@ GND            →   GND (All components)
    ```
    > test_dht      // Verify sensor communication
    > test_lcd      // Check display functionality
-   > test_led      // Validate LED indicators
    > test_relay    // Test relay switching
    ```
 
@@ -1749,7 +1657,6 @@ GND            →   GND (All components)
 3. **Manual Control Testing:**
    ```
    > relay_heater_on    // Test heater control
-   > led_all_on         // Test LED control
    > lcd_clear          // Test display control
    ```
 
@@ -1765,7 +1672,7 @@ GND            →   GND (All components)
 - **Garbled Text:** Verify line ending settings (NL + CR)
 - **Commands Not Working:** Type exact commands (case insensitive)
 - **Memory Issues:** Current optimized version fits Arduino Uno constraints
-- **Other Components:** Use individual test commands to verify LCD, LEDs, buttons
+- **Other Components:** Use individual test commands to verify LCD, buttons
 
 ---
 
@@ -1778,16 +1685,14 @@ This project is **100% complete** with comprehensive functionality:
 **Core Features - COMPLETE:**
 - ✅ Full state machine operation (Standby, Drying, Completed, Error, Emergency Stop)
 - ✅ PID-controlled temperature management with user-adjustable setpoint
-- ✅ Complete button interface (Start/Stop, Display toggle, Temperature adjust, Emergency stop)
-- ✅ Advanced dual-mode display (Status view and Detailed sensor view)
-- ✅ Comprehensive safety features (sensor validation, error recovery, emergency stop)
-- ✅ Smart LED status indicators with multiple patterns
+- ✅ Complete button interface (Start/Stop, Temperature adjust)
+- ✅ Advanced 20x4 LCD display with anti-flicker technology
+- ✅ Comprehensive safety features (sensor validation, error recovery)
 
 **Hardware Integration - TESTED & WORKING:**
 - ✅ DHT22 Temperature/Humidity Sensor
 - ✅ Solid State Relay Control (Heater & Blower)
 - ✅ I2C LCD Display (20x4)
-- ✅ LED Status Indicators
 - ✅ Tactile Button Controls
 - ✅ PID Controller Implementation
 

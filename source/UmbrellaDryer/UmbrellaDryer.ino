@@ -3,7 +3,6 @@
 #include "TactileButton.h"
 #include "DhtSensor.h"
 #include "I2cDisplay.h"
-#include "LedIndicator.h"
 #include "PidController.h"
 #include "RelayModule.h"
 #include "Pins.h"
@@ -15,7 +14,6 @@
 TactileButton buttons;
 DhtSensor dht;
 I2cDisplay lcd;
-LedIndicator leds;
 PidController pid;
 RelayModule relays;
 
@@ -76,11 +74,10 @@ const unsigned long SENSOR_READ_INTERVAL = 2000; // 2 seconds
 struct SystemStatus {
   bool dhtOk;
   bool lcdOk;
-  bool ledsOk;
   bool relaysOk;
   bool buttonsOk;
   bool pidOk;
-} systemStatus = {false, false, false, false, false, false};
+} systemStatus = {false, false, false, false, false};
 
 void setup() {
   Serial.begin(115200);
@@ -102,9 +99,6 @@ void setup() {
   
   lcd.init();
   systemStatus.lcdOk = true;
-  
-  leds.init();
-  systemStatus.ledsOk = true;
   
   relays.init();
   systemStatus.relaysOk = true;
@@ -305,9 +299,6 @@ void startDryingCycle() {
   
   // Turn on systems
   relays.set(RELAY_BLOWER, true);
-  leds.set(LED_1, true);
-  leds.set(LED_2, true);
-  leds.set(LED_3, true);
 }
 
 void stopDryingCycle() {
@@ -317,16 +308,10 @@ void stopDryingCycle() {
   // Turn off everything
   relays.set(RELAY_HEATER, false);
   relays.set(RELAY_BLOWER, false);
-  leds.set(LED_1, false);
-  leds.set(LED_2, false);
-  leds.set(LED_3, false);
 }
 
 void handleStandbyState() {
   // System ready, waiting for user input
-  leds.set(LED_1, false);
-  leds.set(LED_2, false);
-  leds.set(LED_3, false);
   relays.set(RELAY_HEATER, false);
   relays.set(RELAY_BLOWER, false);
 }
@@ -348,26 +333,14 @@ void handleDryingState() {
 
 void handleCompletedState() {
   // Cycle complete, stay here until reset or new cycle
-  static unsigned long completedTime = millis();
-  
-  // Flash LED to indicate completion
-  if ((millis() - completedTime) % 1000 < 500) {
-    leds.set(LED_1, true);
-  } else {
-    leds.set(LED_1, false);
-  }
 }
 
 void handleErrorState() {
-  // Error state - flash all LEDs
+  // Error state
   relays.set(RELAY_HEATER, false);
   relays.set(RELAY_BLOWER, false);
   
   static unsigned long errorTime = millis();
-  bool flashState = (millis() - errorTime) % 500 < 250;
-  leds.set(LED_1, flashState);
-  leds.set(LED_2, flashState);
-  leds.set(LED_3, flashState);
   
   // Allow restart after 10 seconds
   if (millis() - errorTime > 10000) {
@@ -380,9 +353,6 @@ void handleEmergencyStopState() {
   // Emergency stop - everything off
   relays.set(RELAY_HEATER, false);
   relays.set(RELAY_BLOWER, false);
-  leds.set(LED_1, false);
-  leds.set(LED_2, false);
-  leds.set(LED_3, false);
   
   // Require manual reset
   if (buttons.getButtonPressed(0) && buttons.getButtonPressed(1)) {
@@ -580,8 +550,6 @@ void processSerialCommand(const char* command) {
     testDHTSensor();
   } else if (strcmp_P(command, PSTR("test_lcd")) == 0) {
     testLCDDisplay();
-  } else if (strcmp_P(command, PSTR("test_led")) == 0) {
-    testLEDIndicators();
   } else if (strcmp_P(command, PSTR("test_relay")) == 0) {
     testRelayModule();
   } else if (strcmp_P(command, PSTR("test_button")) == 0) {
@@ -603,16 +571,6 @@ void processSerialCommand(const char* command) {
   } else if (strcmp_P(command, PSTR("b_off")) == 0) {
     relays.set(RELAY_BLOWER, false);
     Serial.println(F("Blower OFF"));
-  } else if (strcmp_P(command, PSTR("led_on")) == 0) {
-    leds.set(LED_1, true);
-    leds.set(LED_2, true);
-    leds.set(LED_3, true);
-    Serial.println(F("LEDs ON"));
-  } else if (strcmp_P(command, PSTR("led_off")) == 0) {
-    leds.set(LED_1, false);
-    leds.set(LED_2, false);
-    leds.set(LED_3, false);
-    Serial.println(F("LEDs OFF"));
   } else if (strcmp_P(command, PSTR("clear")) == 0) {
     lcd.clear();
     Serial.println(F("LCD cleared"));
@@ -631,7 +589,6 @@ void printHelp() {
   Serial.println(F("sensors - Sensor data"));
   Serial.println(F("test_dht - Test DHT22"));
   Serial.println(F("test_lcd - Test LCD"));
-  Serial.println(F("test_led - Test LEDs"));
   Serial.println(F("test_relay - Test relays"));
   Serial.println(F("test_button - Test buttons"));
   Serial.println(F("test_pid - Test PID"));
@@ -647,7 +604,6 @@ void printSystemStatus() {
   Serial.println(F("\n--- STATUS ---"));
   Serial.print(F("DHT: ")); Serial.println(systemStatus.dhtOk ? F("OK") : F("ERR"));
   Serial.print(F("LCD: ")); Serial.println(systemStatus.lcdOk ? F("OK") : F("ERR"));
-  Serial.print(F("LED: ")); Serial.println(systemStatus.ledsOk ? F("OK") : F("ERR"));
   Serial.print(F("RELAY: ")); Serial.println(systemStatus.relaysOk ? F("OK") : F("ERR"));
   Serial.print(F("BTN: ")); Serial.println(systemStatus.buttonsOk ? F("OK") : F("ERR"));
   Serial.print(F("PID: ")); Serial.println(systemStatus.pidOk ? F("OK") : F("ERR"));
@@ -701,17 +657,6 @@ void testLCDDisplay() {
   lcd.clear();
   Serial.println(F("LCD OK"));
   systemStatus.lcdOk = true;
-}
-
-void testLEDIndicators() {
-  leds.set(LED_1, true); delay(200);
-  leds.set(LED_2, true); delay(200);
-  leds.set(LED_3, true); delay(200);
-  leds.set(LED_1, false);
-  leds.set(LED_2, false);
-  leds.set(LED_3, false);
-  Serial.println(F("LED OK"));
-  systemStatus.ledsOk = true;
 }
 
 void testRelayModule() {
