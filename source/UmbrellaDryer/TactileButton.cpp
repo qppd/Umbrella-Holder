@@ -9,8 +9,8 @@
 
 TactileButton::TactileButton() : first_time(true) {
     for (int i = 0; i < BUTTON_COUNT; i++) {
-        inputState[i] = LOW;
-        lastInputState[i] = LOW;
+        inputState[i] = HIGH;      // Default state is HIGH (not pressed)
+        lastInputState[i] = HIGH;  // Default state is HIGH (not pressed)
         inputFlags[i] = LOW;
         buttonPressed[i] = false;
         lastDebounceTime[i] = 0;
@@ -19,8 +19,7 @@ TactileButton::TactileButton() : first_time(true) {
 
 void TactileButton::init() {
     for (int i = 0; i < BUTTON_COUNT; i++) {
-        pinMode(inputPins[i], INPUT);
-        digitalWrite(inputPins[i], HIGH);
+        pinMode(inputPins[i], INPUT_PULLUP);  // Use INPUT_PULLUP for proper pull-up
     }
     delay(1000);
     Serial.println("Push Buttons: Initialized!");
@@ -44,7 +43,7 @@ void TactileButton::setInputFlags() {
         if (millis() - lastDebounceTime[i] > DEBOUNCE_DELAY) {
             if (reading != inputState[i]) {
                 inputState[i] = reading;
-                if (inputState[i] == HIGH) {
+                if (inputState[i] == LOW) {  // Button pressed = LOW with pull-up
                     inputFlags[i] = HIGH;
                 }
             }
@@ -60,9 +59,7 @@ void TactileButton::resolveInputFlags() {
                 first_time = false;
             } else {
                 inputAction(i);
-                #if SYSTEM_MODE == MODE_PRODUCTION
-                buttonPressed[i] = true; // Set flag for main program
-                #endif
+                buttonPressed[i] = true; // Always set flag for main program to check
             }
             inputFlags[i] = LOW;
         }

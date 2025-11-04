@@ -10,7 +10,7 @@
 
 #define MODE_DEVELOPMENT 1
 #define MODE_PRODUCTION 2
-#define SYSTEM_MODE MODE_DEVELOPMENT // Set to DEVELOPMENT for serial testing
+#define SYSTEM_MODE MODE_PRODUCTION // Set to DEVELOPMENT for serial testing
 
 TactileButton buttons;
 DhtSensor dht;
@@ -28,7 +28,7 @@ const unsigned long DRYING_DURATION = 8UL * 60UL * 1000UL; // 8 minutes in ms
 const double HEATER_SETPOINT = 60.0;
 const double MIN_SAFE_TEMP = -10.0; // Minimum valid temperature
 const double MAX_SAFE_TEMP = 80.0;  // Maximum safe temperature
-const unsigned long DISPLAY_UPDATE_INTERVAL = 1000; // 1 second
+const unsigned long DISPLAY_UPDATE_INTERVAL = 500; // 500ms for smooth updates
 const unsigned long SENSOR_TIMEOUT = 5000; // 5 seconds for sensor timeout
 
 // System states
@@ -42,6 +42,7 @@ enum SystemState {
 };
 
 SystemState currentState = STATE_STANDBY;
+SystemState lastDisplayedState = STATE_EMERGENCY_STOP; // Force initial full update
 bool dryingActive = false;
 unsigned long dryingStartTime = 0;
 unsigned long lastDisplayUpdate = 0;
@@ -50,6 +51,21 @@ bool displayMode = 0; // 0: Status, 1: Detailed
 double targetTemperature = HEATER_SETPOINT;
 bool emergencyStop = false;
 int sensorErrorCount = 0;
+
+// LCD update tracking to prevent flicker
+String lastLine0 = "";
+String lastLine1 = "";
+String lastLine2 = "";
+String lastLine3 = "";
+float lastDisplayedTemp = -999;
+float lastDisplayedHum = -999;
+int lastDisplayedMinutes = -1;
+int lastDisplayedSeconds = -1;
+
+// Setpoint adjustment display
+bool showingSetpoint = false;
+unsigned long setpointAdjustTime = 0;
+const unsigned long SETPOINT_DISPLAY_DURATION = 5000; // 5 seconds
 
 // Testing variables
 bool continuousMonitoring = false;
@@ -102,12 +118,19 @@ void setup() {
   lcd.setText("Type help", 0, 1);
   Serial.println(F("Type 'help' for commands"));
 #else
-  lcd.setText("UMBRELLA DRYER", 0, 0);
-  lcd.setText("Initializing...", 0, 1);
+  lcd.setText("  UMBRELLA DRYER  ", 0, 0);
+  lcd.setText("  Initializing... ", 0, 1);
   delay(2000);
   lcd.clear();
-  lcd.setText("READY", 0, 0);
-  lcd.setText("Press BTN1 to start", 0, 1);
+  lcd.setText("  UMBRELLA DRYER  ", 0, 0);
+  lcd.setText("Temp: --.-", 0, 1);
+  lcd.setText((char)223, 10, 1); // Degree symbol
+  lcd.setText("C", 11, 1);
+  lcd.setText("Humi: --.-%", 0, 2);
+  lcd.setText("Press BTN1: START", 0, 3);
+  // Initialize last values to force first update
+  lastDisplayedTemp = -999;
+  lastDisplayedHum = -999;
 #endif
   
   // Clear input buffer
@@ -198,32 +221,46 @@ void loop() {
 // ========================================
 
 void handleButtonPresses() {
-  // Button 1: Start/Stop cycle
+  // Button 1: Start drying cycle
   if (buttons.getButtonPressed(0)) {
-    if (currentState == STATE_STANDBY) {
+    if (currentState == STATE_STANDBY || currentState == STATE_COMPLETED) {
       startDryingCycle();
-    } else if (currentState == STATE_DRYING) {
+      showingSetpoint = false; // Clear setpoint display when starting
+    }
+  }
+  
+  // Button 2: Stop drying cycle
+  if (buttons.getButtonPressed(1)) {
+    if (currentState == STATE_DRYING) {
       stopDryingCycle();
     }
   }
   
-  // Button 2: Toggle display mode
-  if (buttons.getButtonPressed(1)) {
-    displayMode = !displayMode;
-  }
-  
-  // Button 3: Temperature adjustment (±5°C)
+  // Button 3: Increase temperature (+5°C)
   if (buttons.getButtonPressed(2)) {
-    if (currentState == STATE_STANDBY) {
-      targetTemperature += 5.0;
-      if (targetTemperature > 70.0) targetTemperature = 50.0; // Cycle 50-70°C
-    }
+    targetTemperature += 5.0;
+    if (targetTemperature > 70.0) targetTemperature = 70.0; // Max 70°C
+    showingSetpoint = true;
+    setpointAdjustTime = millis();
+    // Force display update
+    lastDisplayedState = STATE_EMERGENCY_STOP;
   }
   
-  // Button 4: Emergency stop
+  // Button 4: Decrease temperature (-5°C)
   if (buttons.getButtonPressed(3)) {
-    emergencyStop = true;
-    currentState = STATE_EMERGENCY_STOP;
+    targetTemperature -= 5.0;
+    if (targetTemperature < 50.0) targetTemperature = 50.0; // Min 50°C
+    showingSetpoint = true;
+    setpointAdjustTime = millis();
+    // Force display update
+    lastDisplayedState = STATE_EMERGENCY_STOP;
+  }
+  
+  // Check if setpoint display timeout has elapsed
+  if (showingSetpoint && (millis() - setpointAdjustTime >= SETPOINT_DISPLAY_DURATION)) {
+    showingSetpoint = false;
+    // Force display update to return to normal screen
+    lastDisplayedState = STATE_EMERGENCY_STOP;
   }
 }
 
@@ -355,57 +392,176 @@ void handleEmergencyStopState() {
 }
 
 void updateDisplay() {
-  lcd.clear();
-  
   float temp = dht.getTemperature();
   float hum = dht.getHumidity();
   
-  if (displayMode == 0) {
-    // Status display
-    switch (currentState) {
-      case STATE_STANDBY:
-        lcd.setText("READY - Press BTN1", 0, 0);
-        lcd.setText("Target: ", 0, 1);
-        lcd.setText(targetTemperature, 8, 1);
-        lcd.setText("C", 13, 1);
-        break;
-      case STATE_DRYING:
-        lcd.setText("DRYING...", 0, 0);
-        unsigned long remaining = (DRYING_DURATION - (millis() - dryingStartTime)) / 1000;
-        lcd.setText("Time: ", 0, 1);
-        lcd.setText((int)(remaining / 60), 6, 1);
-        lcd.setText(":", 8, 1);
-        lcd.setText((int)(remaining % 60), 9, 1);
-        break;
-      case STATE_COMPLETED:
-        lcd.setText("CYCLE COMPLETE!", 0, 0);
-        lcd.setText("Press BTN1 for new", 0, 1);
-        break;
-      case STATE_ERROR:
-        lcd.setText("ERROR - CHECK SYS", 0, 0);
-        lcd.setText("Wait 10s to reset", 0, 1);
-        break;
-      case STATE_EMERGENCY_STOP:
-        lcd.setText("EMERGENCY STOP", 0, 0);
-        lcd.setText("BTN1+BTN2 to reset", 0, 1);
-        break;
-    }
-  } else {
-    // Detailed display
-    lcd.setText("T:", 0, 0);
-    lcd.setText(temp, 2, 0);
-    lcd.setText("C H:", 7, 0);
-    lcd.setText(hum, 10, 0);
-    lcd.setText("%", 15, 0);
-    
-    if (currentState == STATE_DRYING) {
-      lcd.setText("PID:", 0, 1);
-      lcd.setText(pid.getOutput(), 4, 1);
-      lcd.setText(" H:", 9, 1);
-      lcd.setText(digitalRead(RELAY_HEATER) ? "ON" : "OFF", 12, 1);
-    } else {
-      lcd.setText("BTN2: Toggle view", 0, 1);
-    }
+  // Handle invalid sensor readings
+  if (temp == -1) temp = 0.0;
+  if (hum == -1) hum = 0.0;
+  
+  // Check if showing setpoint adjustment screen
+  if (showingSetpoint) {
+    displaySetpointAdjustment();
+    return;
+  }
+  
+  // Only clear and redraw if state changed
+  bool stateChanged = (currentState != lastDisplayedState);
+  if (stateChanged) {
+    lcd.clear();
+    lastDisplayedState = currentState;
+    lastDisplayedTemp = -999;
+    lastDisplayedHum = -999;
+    lastDisplayedMinutes = -1;
+    lastDisplayedSeconds = -1;
+  }
+  
+  switch (currentState) {
+    case STATE_STANDBY:
+      if (stateChanged) {
+        lcd.setText("  UMBRELLA DRYER  ", 0, 0);
+        lcd.setText("Temp:       ", 0, 1);
+        lcd.setText((char)223, 11, 1); // Degree symbol
+        lcd.setText("C", 12, 1);
+        lcd.setText("Humi:       %", 0, 2);
+        lcd.setText("Set:    C BTN1:GO", 0, 3);
+        lcd.setText((char)223, 7, 3); // Degree symbol in Set temp
+      }
+      
+      // Update current temperature if changed (>0.2°C difference to prevent jitter)
+      if (abs(temp - lastDisplayedTemp) > 0.2) {
+        lcd.setTextPadded(temp, 6, 1, 5, 1);
+        lastDisplayedTemp = temp;
+      }
+      
+      // Update humidity if changed (>0.5% difference)
+      if (abs(hum - lastDisplayedHum) > 0.5) {
+        lcd.setTextPadded(hum, 6, 2, 5, 1);
+        lastDisplayedHum = hum;
+      }
+      
+      // Always update target temperature display
+      lcd.setTextPadded((int)targetTemperature, 4, 3, 3);
+      break;
+      
+    case STATE_STARTING:
+      if (stateChanged) {
+        lcd.setText("  UMBRELLA DRYER  ", 0, 0);
+        lcd.setText("  *** STARTING ***", 0, 1);
+        lcd.setText("                    ", 0, 2);
+        lcd.setText("  Please wait...  ", 0, 3);
+      }
+      break;
+      
+    case STATE_DRYING:
+      {
+        unsigned long elapsed = millis() - dryingStartTime;
+        unsigned long remaining = (DRYING_DURATION > elapsed) ? (DRYING_DURATION - elapsed) : 0;
+        int minutes = remaining / 60000;
+        int seconds = (remaining % 60000) / 1000;
+        
+        if (stateChanged) {
+          lcd.setText("  *** DRYING ***  ", 0, 0);
+          lcd.setText("Time:   :  ", 0, 1);
+          lcd.setText("Temp:       ", 0, 2);
+          lcd.setText((char)223, 11, 2); // Degree symbol
+          lcd.setText("C", 12, 2);
+          lcd.setText("Humi:       %", 0, 3);
+        }
+        
+        // Update timer if changed
+        if (minutes != lastDisplayedMinutes || seconds != lastDisplayedSeconds) {
+          // Build timer string
+          String timeStr = "";
+          if (minutes < 10) timeStr += "0";
+          timeStr += String(minutes);
+          timeStr += ":";
+          if (seconds < 10) timeStr += "0";
+          timeStr += String(seconds);
+          lcd.setText(timeStr, 6, 1);
+          lastDisplayedMinutes = minutes;
+          lastDisplayedSeconds = seconds;
+        }
+        
+        // Update temperature if changed
+        if (abs(temp - lastDisplayedTemp) > 0.2) {
+          lcd.setTextPadded(temp, 6, 2, 5, 1);
+          lastDisplayedTemp = temp;
+        }
+        
+        // Update humidity if changed
+        if (abs(hum - lastDisplayedHum) > 0.5) {
+          lcd.setTextPadded(hum, 6, 3, 5, 1);
+          lastDisplayedHum = hum;
+        }
+      }
+      break;
+      
+    case STATE_COMPLETED:
+      if (stateChanged) {
+        lcd.setText("  UMBRELLA DRYER  ", 0, 0);
+        lcd.setText(" CYCLE COMPLETE!  ", 0, 1);
+        lcd.setText("                    ", 0, 2);
+        lcd.setText("Press BTN1 for new", 0, 3);
+      }
+      break;
+      
+    case STATE_ERROR:
+      if (stateChanged) {
+        lcd.setText("  UMBRELLA DRYER  ", 0, 0);
+        lcd.setText("  ** ERROR **     ", 0, 1);
+        lcd.setText(" Check sensors!   ", 0, 2);
+        lcd.setText("Auto-reset in 10s", 0, 3);
+      }
+      break;
+      
+    case STATE_EMERGENCY_STOP:
+      if (stateChanged) {
+        lcd.setText("  UMBRELLA DRYER  ", 0, 0);
+        lcd.setText(" EMERGENCY STOP!  ", 0, 1);
+        lcd.setText("                    ", 0, 2);
+        lcd.setText("BTN1+BTN2 to reset", 0, 3);
+      }
+      break;
+  }
+}
+
+void displaySetpointAdjustment() {
+  // Show setpoint adjustment screen
+  static bool screenInitialized = false;
+  
+  if (!screenInitialized) {
+    lcd.clear();
+    lcd.setText("  UMBRELLA DRYER  ", 0, 0);
+    lcd.setText("                    ", 0, 1);
+    lcd.setText("  TARGET TEMP:    ", 0, 2);
+    lcd.setText("                    ", 0, 3);
+    screenInitialized = true;
+  }
+  
+  // Display the setpoint value (centered)
+  String tempStr = "     " + String((int)targetTemperature) + " ";
+  tempStr += (char)223; // Degree symbol
+  tempStr += "C     ";
+  lcd.setText(tempStr, 0, 2);
+  
+  // Show countdown or instruction
+  unsigned long elapsed = millis() - setpointAdjustTime;
+  unsigned long remaining = (SETPOINT_DISPLAY_DURATION - elapsed) / 1000;
+  String instruction = "BTN3:+ BTN4:- (" + String((int)remaining + 1) + "s)";
+  
+  // Center the instruction
+  int padding = (20 - instruction.length()) / 2;
+  String paddedInstruction = "";
+  for (int i = 0; i < padding; i++) paddedInstruction += " ";
+  paddedInstruction += instruction;
+  while (paddedInstruction.length() < 20) paddedInstruction += " ";
+  
+  lcd.setText(paddedInstruction, 0, 3);
+  
+  // Reset screen initialized flag when leaving setpoint mode
+  if (!showingSetpoint) {
+    screenInitialized = false;
   }
 }
 
@@ -576,7 +732,7 @@ void testTactileButtons() {
   while (millis() - start < 5000) {
     buttons.setInputFlags();
     for (int i = 0; i < 4; i++) {
-      if (digitalRead(buttons.inputPins[i]) == HIGH) {
+      if (digitalRead(buttons.inputPins[i]) == LOW) {  // LOW = pressed with pull-up
         Serial.print(F("BTN")); Serial.println(i + 1);
         delay(200);
       }

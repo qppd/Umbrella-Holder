@@ -2,10 +2,10 @@
 #define PINS_H
 
 // Tactile Buttons
-#define BUTTON_1 4
-#define BUTTON_2 5
-#define BUTTON_3 6
-#define BUTTON_4 7
+#define BUTTON_1 4  // Start cycle
+#define BUTTON_2 5  // Stop cycle
+#define BUTTON_3 6  // Increase temperature (+5°C)
+#define BUTTON_4 7  // Decrease temperature (-5°C)
 #define BUTTON_COUNT 4
 #define DEBOUNCE_DELAY 50
 

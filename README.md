@@ -60,27 +60,29 @@ The Umbrella Dryer is a sophisticated IoT solution designed to efficiently dry m
 | **Multi-Umbrella Processing** | Simultaneous drying of up to 6 umbrellas | ✅ Complete |
 | **PID Temperature Control** | Precision heating with user-adjustable setpoint (50-70°C) | ✅ Complete |
 | **Automated Airflow** | Dedicated blower for efficient moisture removal | ✅ Complete |
-| **Timed Operation** | 8-minute automatic cycle with manual control | ✅ Complete |
-| **Advanced Display** | 20x4 LCD with dual viewing modes | ✅ Complete |
-| **Button Interface** | 4-button control system for full user interaction | ✅ Complete |
+| **Timed Operation** | 8-minute countdown timer with MM:SS display | ✅ Complete |
+| **Anti-Flicker LCD** | 20x4 LCD with smart update system (no screen blinking) | ✅ Complete |
+| **Button Listener** | Continuous 4-button monitoring in production mode | ✅ Complete |
 | **LED Indicators** | Smart visual feedback with multiple status patterns | ✅ Complete |
-| **Environmental Monitoring** | Real-time temperature and humidity tracking | ✅ Complete |
+| **Environmental Monitoring** | Real-time temperature and humidity tracking (500ms updates) | ✅ Complete |
 | **Relay Control** | Dual SSR system for heater and blower management | ✅ Complete |
 | **Safety Systems** | Comprehensive error detection and emergency controls | ✅ Complete |
 
 ### Advanced Capabilities
-- **State Machine Architecture**: Professional-grade system states (Standby, Drying, Completed, Error, Emergency Stop)
+- **State Machine Architecture**: Professional-grade system states (Standby, Starting, Drying, Completed, Error, Emergency Stop)
 - **Dual Operation Modes**: Development testing environment and production deployment
 - **Error Recovery**: Automatic sensor failure detection with 10-second recovery cycle
 - **Emergency Procedures**: Immediate shutdown with manual reset protection
 - **Temperature Validation**: Safety range monitoring (-10°C to 80°C)
 - **Memory Optimization**: Efficient resource usage suitable for Arduino Uno
+- **Anti-Flicker Display**: Smart LCD updates only refresh changed data, eliminating screen blinking
+- **Continuous Button Listener**: Always-active button monitoring ensures responsive controls
 
 ### User Interface
-- **Button 1**: Cycle start/stop control
-- **Button 2**: Display mode toggle (Status ↔ Detailed)
-- **Button 3**: Temperature adjustment (50-70°C, 5°C increments)
-- **Button 4**: Emergency stop with dual-button reset requirement
+- **Button 1**: Start drying cycle
+- **Button 2**: Stop drying cycle
+- **Button 3**: Increase temperature (+5°C, standby only)
+- **Button 4**: Decrease temperature (-5°C, standby only)
 
 ---
 
@@ -146,10 +148,10 @@ cd Umbrella-Holder
 ### Pin Assignment
 ```cpp
 // Digital I/O Pin Configuration
-#define BUTTON_1    4    // Start/Stop cycle
-#define BUTTON_2    5    // Display mode toggle  
-#define BUTTON_3    6    // Temperature adjustment
-#define BUTTON_4    7    // Emergency stop
+#define BUTTON_1    4    // Start cycle
+#define BUTTON_2    5    // Stop cycle  
+#define BUTTON_3    6    // Increase temperature (+5°C)
+#define BUTTON_4    7    // Decrease temperature (-5°C)
 #define RELAY_HEATER 8   // Heater SSR control
 #define RELAY_BLOWER 9   // Blower SSR control
 #define DHTPIN      10   // DHT22 data pin
@@ -407,42 +409,79 @@ PidController::PidController(double kp, double ki, double kd, double setpoint)
 #### Control Interface
 
 ##### Button Functions
-- **Button 1 (Start/Stop)**
+- **Button 1 (Start)**
   - *Standby*: Starts drying cycle
-  - *Drying*: Stops current cycle
   - *Completed*: Starts new cycle
-  - *Emergency*: Part of reset sequence (with Button 2)
+  - No effect during active drying
 
-- **Button 2 (Display Toggle)**
-  - Switches between Status and Detailed view modes
-  - *Emergency*: Part of reset sequence (with Button 1)
+- **Button 2 (Stop)**
+  - *Drying*: Stops current cycle immediately
+  - No effect in other states
 
-- **Button 3 (Temperature Adjust)**
-  - *Standby only*: Cycles through temperature settings
-  - Range: 50°C → 55°C → 60°C → 65°C → 70°C → 50°C...
-  - No effect during active cycles
+- **Button 3 (Temp +)**
+  - Increases temperature by 5°C (works anytime)
+  - Range: 50°C to 70°C (max)
+  - Shows setpoint adjustment screen for 5 seconds
 
-- **Button 4 (Emergency Stop)**
-  - Immediate system shutdown from any state
-  - Requires Button 1 + Button 2 simultaneously to reset
+- **Button 4 (Temp -)**
+  - Decreases temperature by 5°C (works anytime)
+  - Range: 70°C to 50°C (min)
+  - Shows setpoint adjustment screen for 5 seconds
 
 ##### Display Modes
 
-**Status Mode** (Default view)
+The 20x4 LCD display features an intelligent update system that prevents flickering by only refreshing changed data. The display shows real-time information in a beautifully formatted layout.
+
+**STANDBY Mode Display**
 ```
-┌────────────────────┐
-│DRYING...           │
-│Time: 7:23          │
-└────────────────────┘
+╔════════════════════╗
+║  UMBRELLA DRYER  ║  Row 0 - Title (centered)
+║ Temp: 25.5°C     ║  Row 1 - Current temperature
+║ Humi: 60.2%      ║  Row 2 - Current humidity  
+║Set: 60°C BTN1:GO ║  Row 3 - Target temp & start prompt
+╚════════════════════╝
 ```
 
-**Detailed Mode** (Press Button 2)
+**DRYING Mode Display** (Active Cycle)
 ```
-┌────────────────────┐
-│T:61.2C H:45%       │
-│PID:180 H:ON        │
-└────────────────────┘
+╔════════════════════╗
+║  *** DRYING ***  ║  Row 0 - Status (centered)
+║ Time:  07:45     ║  Row 1 - Countdown timer (MM:SS)
+║ Temp: 60.0°C     ║  Row 2 - Real-time temperature
+║ Humi: 45.8%      ║  Row 3 - Real-time humidity
+╚════════════════════╝
 ```
+
+**COMPLETED Mode Display**
+```
+╔════════════════════╗
+║  UMBRELLA DRYER  ║  Row 0 - Title
+║ CYCLE COMPLETE!  ║  Row 1 - Completion message
+║                    ║  Row 2 - Blank
+║Press BTN1 for new║  Row 3 - Next action
+╚════════════════════╝
+```
+
+**SETPOINT ADJUSTMENT Display** (When BTN3 or BTN4 pressed)
+```
+╔════════════════════╗
+║  UMBRELLA DRYER  ║  Row 0 - Title
+║                    ║  Row 1 - Blank
+║  TARGET TEMP: 65°C║  Row 2 - Current setpoint
+║BTN3:+ BTN4:- (5s) ║  Row 3 - Instructions & countdown
+╚════════════════════╝
+```
+*Auto-returns to normal screen after 5 seconds*
+
+**Display Features:**
+- **No Flickering**: Smart update system only refreshes changed values
+- **Real-time Updates**: Temperature and humidity update every 500ms
+- **Smooth Timer**: Countdown displayed in MM:SS format during drying
+- **Target Temperature**: Shows adjustable setpoint (BTN3/BTN4) in standby
+- **Setpoint Adjustment Screen**: Dedicated screen when adjusting temperature (5s timeout)
+- **Auto-Return**: Returns to main screen after 5 seconds of inactivity
+- **Centered Text**: Professional appearance with proper alignment
+- **Status Indicators**: Clear visual feedback for all system states
 
 #### Operating Procedures
 
@@ -675,26 +714,32 @@ public:
 - **Error Handling**: Returns -1.0 on sensor failure
 
 #### I2cDisplay Class  
-**Purpose**: LCD interface with dual display modes and multiple data type support
+**Purpose**: LCD interface with anti-flicker display updates and multiple data type support
 
 ```cpp
 class I2cDisplay {
 public:
     I2cDisplay(uint8_t address = 0x27, uint8_t columns = 20, uint8_t rows = 4);
     void init();                              // Initialize display
-    void clear();                             // Clear screen
+    void clear();                             // Clear entire screen
+    void clearLine(int y);                    // Clear specific line
     void setText(const String& text, int x, int y);  // String output
     void setText(double value, int x, int y); // Double output
     void setText(float value, int x, int y);  // Float output
     void setText(int value, int x, int y);    // Integer output
     void setText(char text, int x, int y);    // Character output
+    void setTextPadded(const String& text, int x, int y, int width);  // Padded string
+    void setTextPadded(float value, int x, int y, int width, int decimals = 1);  // Padded float
+    void setTextPadded(int value, int x, int y, int width);  // Padded integer
 };
 ```
 
 **Features**:
 - **Multi-type Support**: Automatic formatting for different data types
+- **Anti-flicker**: Padded text methods prevent display artifacts
 - **Positioning**: Precise cursor control (x, y coordinates)
 - **I2C Communication**: Address 0x27 (configurable)
+- **Smart Updates**: Only refreshes changed portions to eliminate flickering
 
 #### PidController Class
 **Purpose**: Precision temperature control with tunable PID algorithms
@@ -1186,14 +1231,16 @@ For any modifications or customizations, edit the STL file using your preferred 
 ### 🎮 Production Mode Controls
 
 **Button Functions:**
-- **Button 1** (Pin 4): Start/Stop drying cycle
-- **Button 2** (Pin 5): Toggle display mode (Status ↔ Detailed)
-- **Button 3** (Pin 6): Adjust target temperature (50°C → 55°C → 60°C → 65°C → 70°C → 50°C...)
-- **Button 4** (Pin 7): Emergency stop (requires Button 1+2 simultaneously to reset)
+- **Button 1** (Pin 4): Start drying cycle
+- **Button 2** (Pin 5): Stop drying cycle
+- **Button 3** (Pin 6): Increase target temperature (+5°C, anytime, max 70°C)
+- **Button 4** (Pin 7): Decrease target temperature (-5°C, anytime, min 50°C)
 
-**Display Modes:**
-- **Status Mode**: System state, cycle progress, time remaining, target temperature
-- **Detailed Mode**: Real-time temperature, humidity, PID output, heater status
+**LCD Display (20x4 Anti-Flicker):**
+- **Standby**: System title, real-time temp/humidity, target temp, start prompt
+- **Drying**: Countdown timer (MM:SS), real-time temperature & humidity
+- **Completed**: Completion message with prompt for new cycle
+- **Error/Emergency**: Status message with recovery instructions
 
 **LED Indicators:**
 - **All LEDs ON**: Active drying cycle
@@ -1205,13 +1252,14 @@ For any modifications or customizations, edit the STL file using your preferred 
 1. **System Initialization**
    - All modules initialize (sensors, relays, display, LEDs)
    - **Development Mode**: LCD displays "DEV MODE" and commands available via Serial
-   - **Production Mode**: LCD displays "UMBRELLA DRYER" and "READY" status
+   - **Production Mode**: LCD displays "UMBRELLA DRYER" with real-time temp/humidity
 
 2. **Production Mode User Interface**
-   - **Button 1**: Start/Stop drying cycle
-   - **Button 2**: Toggle display mode (Status/Detailed)
-   - **Button 3**: Adjust target temperature (50-70°C in 5°C increments)
-   - **Button 4**: Emergency stop (requires Button 1+2 to reset)
+   - **Button 1**: Start drying cycle
+   - **Button 2**: Stop drying cycle
+   - **Button 3**: Increase target temperature (+5°C, works anytime)
+   - **Button 4**: Decrease target temperature (-5°C, works anytime)
+   - **Setpoint Display**: Auto-shows adjustment screen for 5 seconds when BTN3/BTN4 pressed
 
 3. **Automatic Drying Cycle**
    - **Manual Start**: Press Button 1 to begin cycle
@@ -1219,11 +1267,14 @@ For any modifications or customizations, edit the STL file using your preferred 
    - **Blower**: Activates immediately and runs for full cycle duration
    - **Safety Features**: Temperature range validation, sensor error detection
    - **LEDs**: All three indicators illuminate during operation
-   - **Display**: Shows cycle progress, time remaining, and real-time data
+   - **Display**: Shows countdown timer (MM:SS), real-time temp & humidity without flickering
 
-4. **Advanced Display Modes**
-   - **Status Mode**: Cycle state, time remaining, target temperature
-   - **Detailed Mode**: Real-time temperature, humidity, PID output, heater status
+4. **Enhanced LCD Display**
+   - **Anti-Flicker Technology**: Smart updates only refresh changed values
+   - **Real-time Data**: Temperature and humidity update every 500ms
+   - **Countdown Timer**: Displays remaining time in MM:SS format
+   - **Professional Layout**: Centered text and proper alignment on 20x4 display
+   - **All States Covered**: Standby, Starting, Drying, Completed, Error, Emergency
 
 5. **Safety & Error Handling**
    - Sensor failure detection with automatic error recovery
@@ -1234,6 +1285,7 @@ For any modifications or customizations, edit the STL file using your preferred 
 6. **Cycle Completion**
    - After 8 minutes: All relays turn OFF, completion indication
    - Flashing LED indicates cycle complete
+   - LCD displays "CYCLE COMPLETE!" message
    - System ready for new cycle
 
 ### 🛡️ Safety Features
