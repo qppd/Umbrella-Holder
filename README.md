@@ -1136,33 +1136,105 @@ UmbrellaDryer/
 ```
 
 
-## 🖼️ 3D Model: Umbrella Holder Board Case
 
+## 🖼️ 3D Models
+
+### Umbrella Holder Board Case
 <div align="center">
    <img src="model/Umbrella_Holder_Board_Case.png" alt="Umbrella Holder Board Case 3D Model" width="400"/>
 </div>
-
-### Model Description
-The image above shows the 3D model of the custom Umbrella Holder Board Case. This enclosure is designed to securely house the main electronics, relays, and wiring for the automated umbrella dryer system. The model is available as an STL file for 3D printing and as a PNG for quick reference.
-
-**Key Features:**
-- Custom-fit for all electronics and relays
-- Ventilation slots for airflow and cooling
-- Mounting points for secure installation
-- Easy access for wiring and maintenance
+**Description:**
+Custom enclosure for main electronics, relays, and wiring. Features ventilation, mounting points, and easy access for maintenance.
 
 **Files:**
 - `model/Umbrella_Holder_Board_Case.stl` — 3D printable model
 - `model/Umbrella_Holder_Board_Case.png` — Rendered preview
 
-### To-Do for Model Usage
-- [ ] Download the STL file from the `model/` directory
-- [ ] Print the case using a 3D printer (recommended: PLA or ABS)
-- [ ] Test-fit all electronics and relays before final assembly
-- [ ] Ensure ventilation slots are unobstructed
-- [ ] Secure the case in your installation location
+**To-Do:**
+- [ ] Download STL
+- [ ] Print (PLA/ABS recommended)
+- [ ] Test-fit electronics
+- [ ] Ensure ventilation
+- [ ] Secure in installation
 
-For any modifications or customizations, edit the STL file using your preferred CAD software.
+---
+
+### Umbrella Holder IR Mount (Top & Bottom)
+<div align="center">
+   <img src="model/Umbrella_Holder_IR_Mount.png" alt="Umbrella Holder IR Mount 3D Model" width="400"/>
+</div>
+**Description:**
+Mount for IR sensors, available in top and bottom parts. Designed for precise sensor alignment and secure attachment to the umbrella holder frame.
+
+**Files:**
+- `model/Umbrella_Holder_IR_Mount_Top.stl` — Top part STL
+- `model/Umbrella_Holder_IR_Mount_Bottom.stl` — Bottom part STL
+- `model/Umbrella_Holder_IR_Mount.png` — Rendered preview
+
+**To-Do:**
+- [ ] Download STL files
+- [ ] Print both parts
+- [ ] Assemble and attach IR sensors
+
+---
+
+### Umbrella Holder LCD Mount
+<div align="center">
+   <img src="model/Umbrella_Holder_Lcd_Mount.png" alt="Umbrella Holder LCD Mount 3D Model" width="400"/>
+</div>
+**Description:**
+Custom mount for the 20x4 I2C LCD display. Ensures secure and visible placement of the user interface on the umbrella dryer.
+
+**Files:**
+- `model/Umbrella_Holder_Lcd_Mount.stl` — 3D printable model
+- `model/Umbrella_Holder_Lcd_Mount.png` — Rendered preview
+
+**To-Do:**
+- [ ] Download STL
+- [ ] Print and test-fit LCD
+- [ ] Attach to main enclosure
+
+---
+
+### DHT Sensor Mount and Cover
+**Description:**
+Mount and protective cover for the DHT22 temperature/humidity sensor. Designed for optimal airflow and sensor protection.
+
+**Files:**
+- `model/CE3V3SE_Umbrella_Holder_DHT_Mount_and_Cover.gcode` — G-code for 3D printing
+
+**To-Do:**
+- [ ] Download G-code
+- [ ] Print mount and cover
+- [ ] Install DHT22 sensor
+
+---
+
+### IR Mount (Top) - G-code
+**Description:**
+G-code for printing the IR Mount Top part, compatible with Creality Ender 3 V2 (CE3V3SE).
+
+**Files:**
+- `model/CE3V3SE_Umbrella_Holder_IR_Mount_Top.gcode` — G-code for 3D printing
+
+**To-Do:**
+- [ ] Download G-code
+- [ ] Print IR Mount Top
+
+---
+
+### LCD Mount - G-code
+**Description:**
+G-code for printing the LCD Mount, compatible with Creality Ender 3 V2 (CE3V3SE).
+
+**Files:**
+- `model/CE3V3SE_Umbrella_Holder_Lcd_Mount.gcode` — G-code for 3D printing
+
+**To-Do:**
+- [ ] Download G-code
+- [ ] Print LCD Mount
+
+---
 
 ## ⚙️ System Operation
 
