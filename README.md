@@ -1236,6 +1236,76 @@ G-code for printing the LCD Mount, compatible with Creality Ender 3 V2 (CE3V3SE)
 
 ---
 
+### Board Case - G-code
+**Description:**
+G-code for printing the Board Case enclosure, compatible with Creality Ender 3 V2 (CE3V3SE).
+
+**Files:**
+- `model/CE3V3SE_Umbrella_Holder_Board_Case.gcode` — G-code for 3D printing
+
+**To-Do:**
+- [ ] Download G-code
+- [ ] Print Board Case
+
+---
+
+### IR Mount - G-code
+**Description:**
+G-code for printing the general IR Mount, compatible with Creality Ender 3 V2 (CE3V3SE).
+
+**Files:**
+- `model/CE3V3SE_Umbrella_Holder_IR_Mount.gcode` — G-code for 3D printing
+
+**To-Do:**
+- [ ] Download G-code
+- [ ] Print IR Mount
+
+---
+
+### IR Mount Bottom - G-code
+**Description:**
+G-code for printing the IR Mount Bottom part, compatible with Creality Ender 3 V2 (CE3V3SE).
+
+**Files:**
+- `model/CE3V3SE_Umbrella_Holder_IR_Mount_Bottom.gcode` — G-code for 3D printing
+
+**To-Do:**
+- [ ] Download G-code
+- [ ] Print IR Mount Bottom
+
+---
+
+### Umbrella Holder Limit Switch Mount
+<div align="center">
+   <img src="model/Umbrella_Holder_Limit_Switch_Mount.png" alt="Umbrella Holder Limit Switch Mount 3D Model" width="400"/>
+</div>
+**Description:**
+Mount for limit switches used in the umbrella holder mechanism. Ensures precise positioning and secure attachment.
+
+**Files:**
+- `model/Umbrella_Holder_Limit_Switch_Mount.stl` — 3D printable model
+- `model/Umbrella_Holder_Limit_Switch_Mount.png` — Rendered preview
+
+**To-Do:**
+- [ ] Download STL
+- [ ] Print and install limit switch
+- [ ] Test switch functionality
+
+---
+
+### Limit Switch Mount - G-code
+**Description:**
+G-code for printing the Limit Switch Mount, compatible with Creality Ender 3 V2 (CE3V3SE).
+
+**Files:**
+- `model/CE3V3SE_Umbrella_Holder_Limit_Switch_Mount.gcode` — G-code for 3D printing
+
+**To-Do:**
+- [ ] Download G-code
+- [ ] Print Limit Switch Mount
+
+---
+
 ## ⚙️ System Operation
 
 ### 🎮 Production Mode Controls
