@@ -1151,11 +1151,11 @@ Custom enclosure for main electronics, relays, and wiring. Features ventilation,
 - `model/Umbrella_Holder_Board_Case.png` — Rendered preview
 
 **To-Do:**
-- [ ] Download STL
-- [ ] Print (PLA/ABS recommended)
-- [ ] Test-fit electronics
-- [ ] Ensure ventilation
-- [ ] Secure in installation
+- [x] Download STL
+- [x] Print (PLA/ABS recommended)
+- [x] Test-fit electronics
+- [x] Ensure ventilation
+- [x] Secure in installation
 
 ---
 
@@ -1172,9 +1172,9 @@ Mount for IR sensors, available in top and bottom parts. Designed for precise se
 - `model/Umbrella_Holder_IR_Mount.png` — Rendered preview
 
 **To-Do:**
-- [ ] Download STL files
-- [ ] Print both parts
-- [ ] Assemble and attach IR sensors
+- [x] Download STL files
+- [x] Print both parts
+- [x] Assemble and attach IR sensors
 
 ---
 
@@ -1190,9 +1190,9 @@ Custom mount for the 20x4 I2C LCD display. Ensures secure and visible placement 
 - `model/Umbrella_Holder_Lcd_Mount.png` — Rendered preview
 
 **To-Do:**
-- [ ] Download STL
-- [ ] Print and test-fit LCD
-- [ ] Attach to main enclosure
+- [x] Download STL
+- [x] Print and test-fit LCD
+- [x] Attach to main enclosure
 
 ---
 
@@ -1204,9 +1204,9 @@ Mount and protective cover for the DHT22 temperature/humidity sensor. Designed f
 - `model/CE3V3SE_Umbrella_Holder_DHT_Mount_and_Cover.gcode` — G-code for 3D printing
 
 **To-Do:**
-- [ ] Download G-code
-- [ ] Print mount and cover
-- [ ] Install DHT22 sensor
+- [x] Download G-code
+- [x] Print mount and cover
+- [x] Install DHT22 sensor
 
 ---
 
@@ -1218,8 +1218,8 @@ G-code for printing the IR Mount Top part, compatible with Creality Ender 3 V2 (
 - `model/CE3V3SE_Umbrella_Holder_IR_Mount_Top.gcode` — G-code for 3D printing
 
 **To-Do:**
-- [ ] Download G-code
-- [ ] Print IR Mount Top
+- [x] Download G-code
+- [x] Print IR Mount Top
 
 ---
 
@@ -1231,8 +1231,8 @@ G-code for printing the LCD Mount, compatible with Creality Ender 3 V2 (CE3V3SE)
 - `model/CE3V3SE_Umbrella_Holder_Lcd_Mount.gcode` — G-code for 3D printing
 
 **To-Do:**
-- [ ] Download G-code
-- [ ] Print LCD Mount
+- [x] Download G-code
+- [x] Print LCD Mount
 
 ---
 
@@ -1244,8 +1244,8 @@ G-code for printing the Board Case enclosure, compatible with Creality Ender 3 V
 - `model/CE3V3SE_Umbrella_Holder_Board_Case.gcode` — G-code for 3D printing
 
 **To-Do:**
-- [ ] Download G-code
-- [ ] Print Board Case
+- [x] Download G-code
+- [x] Print Board Case
 
 ---
 
@@ -1257,8 +1257,8 @@ G-code for printing the general IR Mount, compatible with Creality Ender 3 V2 (C
 - `model/CE3V3SE_Umbrella_Holder_IR_Mount.gcode` — G-code for 3D printing
 
 **To-Do:**
-- [ ] Download G-code
-- [ ] Print IR Mount
+- [x] Download G-code
+- [x] Print IR Mount
 
 ---
 
@@ -1270,8 +1270,8 @@ G-code for printing the IR Mount Bottom part, compatible with Creality Ender 3 V
 - `model/CE3V3SE_Umbrella_Holder_IR_Mount_Bottom.gcode` — G-code for 3D printing
 
 **To-Do:**
-- [ ] Download G-code
-- [ ] Print IR Mount Bottom
+- [x] Download G-code
+- [x] Print IR Mount Bottom
 
 ---
 
@@ -1287,9 +1287,9 @@ Mount for limit switches used in the umbrella holder mechanism. Ensures precise 
 - `model/Umbrella_Holder_Limit_Switch_Mount.png` — Rendered preview
 
 **To-Do:**
-- [ ] Download STL
-- [ ] Print and install limit switch
-- [ ] Test switch functionality
+- [x] Download STL
+- [x] Print and install limit switch
+- [x] Test switch functionality
 
 ---
 
@@ -1301,8 +1301,8 @@ G-code for printing the Limit Switch Mount, compatible with Creality Ender 3 V2 
 - `model/CE3V3SE_Umbrella_Holder_Limit_Switch_Mount.gcode` — G-code for 3D printing
 
 **To-Do:**
-- [ ] Download G-code
-- [ ] Print Limit Switch Mount
+- [x] Download G-code
+- [x] Print Limit Switch Mount
 
 ---
 
