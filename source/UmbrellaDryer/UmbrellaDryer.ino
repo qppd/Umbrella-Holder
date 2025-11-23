@@ -130,9 +130,7 @@ void setup() {
   delay(2000);
   lcd.clear();
   lcd.setText("  UMBRELLA DRYER  ", 0, 0);
-  lcd.setText("Temp: --.-", 0, 1);
-  lcd.setText((char)223, 10, 1); // Degree symbol
-  lcd.setText("C", 11, 1);
+  lcd.setText("Temp: --.- C", 0, 1);
   lcd.setText("Humi: --.-%", 0, 2);
   lcd.setText("Press BTN1: START", 0, 3);
   // Initialize last values to force first update
@@ -439,12 +437,10 @@ void updateDisplay() {
     case STATE_STANDBY:
       if (stateChanged) {
         lcd.setText("  UMBRELLA DRYER  ", 0, 0);
-        lcd.setText("Temp:       ", 0, 1);
-        lcd.setText((char)223, 11, 1); // Degree symbol
-        lcd.setText("C", 12, 1);
+        lcd.setText("Temp:      C", 0, 1);
         lcd.setText("Humi:       %", 0, 2);
-        lcd.setText("Set:    C BTN1:GO", 0, 3);
-        lcd.setText((char)223, 7, 3); // Degree symbol in Set temp
+        lcd.setText("Set:   C BTN1:GO", 0, 3);
+        // Removed degree symbol - using just "C" for Celsius
       }
       
       // Update current temperature if changed (>0.2°C difference to prevent jitter)
@@ -482,9 +478,7 @@ void updateDisplay() {
         if (stateChanged) {
           lcd.setText("  *** DRYING ***  ", 0, 0);
           lcd.setText("Time:   :  ", 0, 1);
-          lcd.setText("Temp:       ", 0, 2);
-          lcd.setText((char)223, 11, 2); // Degree symbol
-          lcd.setText("C", 12, 2);
+          lcd.setText("Temp:      C", 0, 2);
           lcd.setText("Humi:       %", 0, 3);
         }
         
@@ -559,9 +553,7 @@ void displaySetpointAdjustment() {
   }
   
   // Display the setpoint value (centered)
-  String tempStr = "     " + String((int)targetTemperature) + " ";
-  tempStr += (char)223; // Degree symbol
-  tempStr += "C     ";
+  String tempStr = "     " + String((int)targetTemperature) + " C     ";
   lcd.setText(tempStr, 0, 2);
   
   // Show countdown or instruction
