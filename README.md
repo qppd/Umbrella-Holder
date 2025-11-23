@@ -58,7 +58,7 @@ The Umbrella Dryer is a sophisticated IoT solution designed to efficiently dry m
 | Feature | Description | Status |
 |---------|-------------|--------|
 | **Multi-Umbrella Processing** | Simultaneous drying of up to 6 umbrellas | ✅ Complete |
-| **PID Temperature Control** | Precision heating with user-adjustable setpoint (50-70°C) | ✅ Complete |
+| **PID Temperature Control** | Precision heating with user-adjustable setpoint (40-60°C) | ✅ Complete |
 | **Automated Airflow** | Dedicated blower for efficient moisture removal | ✅ Complete |
 | **Timed Operation** | 8-minute countdown timer with MM:SS display | ✅ Complete |
 | **Anti-Flicker LCD** | 20x4 LCD with smart update system (no screen blinking) | ✅ Complete |
@@ -406,12 +406,12 @@ PidController::PidController(double kp, double ki, double kd, double setpoint)
 
 - **Button 3 (Temp +)**
   - Increases temperature by 5°C (works anytime)
-  - Range: 50°C to 70°C (max)
+  - Range: 40°C to 60°C (max)
   - Shows setpoint adjustment screen for 5 seconds
 
 - **Button 4 (Temp -)**
   - Decreases temperature by 5°C (works anytime)
-  - Range: 70°C to 50°C (min)
+  - Range: 60°C to 40°C (min)
   - Shows setpoint adjustment screen for 5 seconds
 
 ##### Display Modes
@@ -507,7 +507,7 @@ The 20x4 LCD display features an intelligent update system that prevents flicker
 #### Safety Guidelines
 
 ##### Temperature Safety
-- **Normal Range**: 50-70°C user adjustable
+- **Normal Range**: 40-60°C user adjustable
 - **Safety Limits**: -10°C to 80°C absolute
 - **Sensor Failure**: Automatic heater shutdown
 - **Overtemperature**: Emergency stop activation
@@ -1380,7 +1380,7 @@ G-code for printing the Limit Switch Mount, compatible with Creality Ender 3 V2 
 
 **Temperature Safety:**
 - Valid range: -10°C to 80°C
-- User-adjustable setpoint: 50°C to 70°C
+- User-adjustable setpoint: 40°C to 60°C
 - PID-controlled precision heating
 - Automatic heater shutoff on sensor failure
 
@@ -1571,7 +1571,7 @@ Blower OFF
 const double HEATER_SETPOINT = 60.0;  // Default target temperature in Celsius
 const double MIN_SAFE_TEMP = -10.0;   // Minimum valid sensor reading
 const double MAX_SAFE_TEMP = 80.0;    // Maximum safe temperature
-// User adjustable range in production: 50°C to 70°C (5°C increments)
+// User adjustable range in production: 40°C to 60°C (5°C increments)
 ```
 
 ### Timing Configuration

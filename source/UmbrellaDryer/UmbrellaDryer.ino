@@ -282,7 +282,7 @@ void handleButtonPresses() {
   // Button 3: Increase temperature (+5°C)
   if (buttons.getButtonPressed(2)) {
     targetTemperature += 5.0;
-    if (targetTemperature > 70.0) targetTemperature = 70.0; // Max 70°C
+    if (targetTemperature > 60.0) targetTemperature = 60.0; // Max 60°C
     showingSetpoint = true;
     setpointAdjustTime = millis();
     // Force display update
@@ -292,7 +292,7 @@ void handleButtonPresses() {
   // Button 4: Decrease temperature (-5°C)
   if (buttons.getButtonPressed(3)) {
     targetTemperature -= 5.0;
-    if (targetTemperature < 50.0) targetTemperature = 50.0; // Min 50°C
+    if (targetTemperature < 40.0) targetTemperature = 40.0; // Min 40°C
     showingSetpoint = true;
     setpointAdjustTime = millis();
     // Force display update
