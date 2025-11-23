@@ -1391,6 +1391,118 @@ G-code for printing the Limit Switch Mount, compatible with Creality Ender 3 V2 
 
 ---
 
+## 📊 System Flowchart
+
+### System Operation Flow Diagram
+
+```mermaid
+flowchart TD
+    Start([System Power On]) --> Init[Initialize Components]
+    Init --> InitCheck{All Components<br/>Initialized?}
+    
+    InitCheck -->|No| ErrorState[ERROR State]
+    InitCheck -->|Yes| ModeCheck{System Mode?}
+    
+    ModeCheck -->|Development| DevMode[Development Mode<br/>Serial Commands Active]
+    ModeCheck -->|Production| Standby[STANDBY State<br/>Display Ready Screen]
+    
+    Standby --> SensorUpdate[Update Sensors:<br/>- IR Sensor<br/>- Limit Switch<br/>- DHT22]
+    SensorUpdate --> CheckAuto{Auto-Start<br/>Conditions?}
+    
+    CheckAuto -->|Umbrella Detected<br/>AND Door Closed| AutoStart[Automatic Start<br/>Edge Detection]
+    CheckAuto -->|No| CheckManual{Button 1<br/>Pressed?}
+    
+    CheckManual -->|Yes| ManualStart[Manual Start]
+    CheckManual -->|No| TempAdj{Button 3/4<br/>Pressed?}
+    
+    TempAdj -->|Yes| AdjustTemp[Adjust Temperature<br/>±5°C]
+    TempAdj -->|No| SensorUpdate
+    
+    AutoStart --> Starting[STARTING State]
+    ManualStart --> Starting
+    AdjustTemp --> ShowSetpoint[Display Setpoint<br/>5 seconds]
+    ShowSetpoint --> SensorUpdate
+    
+    Starting --> Drying[DRYING State<br/>Start Timer: 8 min]
+    
+    Drying --> DryingLoop{Cycle Active?}
+    DryingLoop --> ReadSensors[Read Temperature<br/>& Humidity]
+    ReadSensors --> SafetyCheck{Safety Check<br/>Pass?}
+    
+    SafetyCheck -->|Sensor Error| ErrorState
+    SafetyCheck -->|Temp Out Range| ErrorState
+    SafetyCheck -->|OK| PIDCompute[PID Compute<br/>Temperature Control]
+    
+    PIDCompute --> RelayControl{PID Output<br/>> 0?}
+    RelayControl -->|Yes| HeaterOn[Heater Relay ON]
+    RelayControl -->|No| HeaterOff[Heater Relay OFF]
+    
+    HeaterOn --> BlowerOn[Blower Relay ON]
+    HeaterOff --> BlowerOn
+    
+    BlowerOn --> UpdateDisplay[Update LCD Display<br/>Timer & Sensors]
+    UpdateDisplay --> CheckStop{Button 2<br/>Pressed?}
+    
+    CheckStop -->|Yes| StopCycle[Stop Cycle]
+    CheckStop -->|No| CheckTime{Timer<br/>Expired?}
+    
+    CheckTime -->|No| DryingLoop
+    CheckTime -->|Yes| Complete[COMPLETED State]
+    
+    Complete --> RelaysOff[Turn OFF All Relays]
+    RelaysOff --> DisplayComplete[Display Complete<br/>Message]
+    DisplayComplete --> WaitNewCycle{Button 1<br/>Pressed?}
+    
+    WaitNewCycle -->|Yes| Starting
+    WaitNewCycle -->|No| DisplayComplete
+    
+    StopCycle --> Complete
+    
+    ErrorState --> DisplayError[Display Error<br/>Message]
+    DisplayError --> ErrorWait[Wait 10 Seconds]
+    ErrorWait --> ErrorRecovery{Recovery<br/>Timeout?}
+    
+    ErrorRecovery -->|Yes| Standby
+    ErrorRecovery -->|No| DisplayError
+    
+    DevMode --> SerialCmd{Serial<br/>Command?}
+    SerialCmd -->|help| ShowCommands[Show Available<br/>Commands]
+    SerialCmd -->|test_*| RunTest[Execute Component<br/>Test]
+    SerialCmd -->|h_on/off| ManualHeater[Manual Heater<br/>Control]
+    SerialCmd -->|b_on/off| ManualBlower[Manual Blower<br/>Control]
+    SerialCmd -->|monitor| ContMonitor[Continuous<br/>Monitoring]
+    
+    ShowCommands --> SerialCmd
+    RunTest --> SerialCmd
+    ManualHeater --> SerialCmd
+    ManualBlower --> SerialCmd
+    ContMonitor --> SerialCmd
+    
+    style Start fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style Standby fill:#2196F3,stroke:#1565C0,color:#fff
+    style Drying fill:#FF9800,stroke:#E65100,color:#fff
+    style Complete fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style ErrorState fill:#F44336,stroke:#C62828,color:#fff
+    style AutoStart fill:#9C27B0,stroke:#6A1B9A,color:#fff
+    style DevMode fill:#607D8B,stroke:#37474F,color:#fff
+```
+
+### State Transition Summary
+
+| Current State | Trigger | Next State |
+|---------------|---------|------------|
+| **Standby** | Umbrella detected + Door closed | Starting (Auto) |
+| **Standby** | Button 1 pressed | Starting (Manual) |
+| **Standby** | Button 3/4 pressed | Standby (Temp adjusted) |
+| **Starting** | Initialization complete | Drying |
+| **Drying** | Timer expired (8 min) | Completed |
+| **Drying** | Button 2 pressed | Completed (Manual stop) |
+| **Drying** | Safety check failed | Error |
+| **Completed** | Button 1 pressed | Starting |
+| **Error** | 10-second timeout | Standby |
+
+---
+
 ## ⚙️ System Operation
 
 ### 🎮 Production Mode Controls
