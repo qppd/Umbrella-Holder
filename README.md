@@ -825,6 +825,8 @@ enum SystemState {
 > test_relay      # SSR functionality
 > test_button     # Input responsiveness
 > test_pid        # Control algorithm
+> test_limit      # Door limit switch test
+> test_ir         # Umbrella IR sensor test
 ```
 
 #### Expected Test Results
@@ -864,6 +866,20 @@ BTN1 BTN2 BTN3 BTN4
 PID - T:23.5 Out:255.0
 ```
 **Success Criteria**: PID output calculation based on current temperature
+
+##### Limit Switch Test
+```
+> test_limit
+Limit - Closed:NO Open:YES
+```
+**Success Criteria**: Switch state correctly detected (door open/closed)
+
+##### IR Sensor Test
+```
+> test_ir
+IR - Umbrella:NOT DETECTED
+```
+**Success Criteria**: Sensor state reported (umbrella present/absent)
 
 ### Production Mode Testing
 
@@ -1445,6 +1461,8 @@ Set `SYSTEM_MODE` to `MODE_DEVELOPMENT` for component testing via Serial Monitor
 | `test_relay` | Test relay modules | ✅ **WORKING** - Heater and blower control |
 | `test_button` | Test tactile buttons | ✅ Available - 5-second button test |
 | `test_pid` | Test PID controller | ✅ Available - Output calculation test |
+| `test_limit` | Test limit switch | ✅ Available - Door open/closed detection |
+| `test_ir` | Test IR sensor | ✅ Available - Umbrella presence detection |
 
 ### Manual Hardware Control (Verified)
 | Command | Description | Status |
@@ -1472,6 +1490,8 @@ LCD: OK
 RELAY: OK
 BTN: OK
 PID: OK
+LIMIT: OK
+IR: OK
 Monitor: OFF
 
 > sensors

@@ -85,7 +85,9 @@ struct SystemStatus {
   bool relaysOk;
   bool buttonsOk;
   bool pidOk;
-} systemStatus = {false, false, false, false, false};
+  bool limitOk;
+  bool irOk;
+} systemStatus = {false, false, false, false, false, false, false};
 
 void setup() {
   Serial.begin(115200);
@@ -603,6 +605,10 @@ void processSerialCommand(const char* command) {
     testTactileButtons();
   } else if (strcmp_P(command, PSTR("test_pid")) == 0) {
     testPIDController();
+  } else if (strcmp_P(command, PSTR("test_limit")) == 0) {
+    testLimitSwitch();
+  } else if (strcmp_P(command, PSTR("test_ir")) == 0) {
+    testIRSensor();
   } else if (strcmp_P(command, PSTR("monitor")) == 0) {
     continuousMonitoring = !continuousMonitoring;
     Serial.println(continuousMonitoring ? F("Monitor ON") : F("Monitor OFF"));
@@ -639,6 +645,8 @@ void printHelp() {
   Serial.println(F("test_relay - Test relays"));
   Serial.println(F("test_button - Test buttons"));
   Serial.println(F("test_pid - Test PID"));
+  Serial.println(F("test_limit - Test limit switch"));
+  Serial.println(F("test_ir - Test IR sensor"));
   Serial.println(F("monitor - Toggle monitoring"));
   Serial.println(F("h_on/h_off - Heater control"));
   Serial.println(F("b_on/b_off - Blower control"));
@@ -654,6 +662,8 @@ void printSystemStatus() {
   Serial.print(F("RELAY: ")); Serial.println(systemStatus.relaysOk ? F("OK") : F("ERR"));
   Serial.print(F("BTN: ")); Serial.println(systemStatus.buttonsOk ? F("OK") : F("ERR"));
   Serial.print(F("PID: ")); Serial.println(systemStatus.pidOk ? F("OK") : F("ERR"));
+  Serial.print(F("LIMIT: ")); Serial.println(systemStatus.limitOk ? F("OK") : F("ERR"));
+  Serial.print(F("IR: ")); Serial.println(systemStatus.irOk ? F("OK") : F("ERR"));
   Serial.print(F("Monitor: ")); Serial.println(continuousMonitoring ? F("ON") : F("OFF"));
 }
 
@@ -749,6 +759,29 @@ void testPIDController() {
   Serial.println(pid.getOutput());
   
   systemStatus.pidOk = true;
+}
+
+void testLimitSwitch() {
+  limitSwitch.update();
+  bool closed = limitSwitch.isDoorClosed();
+  bool open = limitSwitch.isDoorOpen();
+  
+  Serial.print(F("Limit - Closed:"));
+  Serial.print(closed ? F("YES") : F("NO"));
+  Serial.print(F(" Open:"));
+  Serial.println(open ? F("YES") : F("NO"));
+  
+  systemStatus.limitOk = true; // Assuming it's working if we can read it
+}
+
+void testIRSensor() {
+  irSensor.update();
+  bool detected = irSensor.isUmbrellaDetected();
+  
+  Serial.print(F("IR - Umbrella:"));
+  Serial.println(detected ? F("DETECTED") : F("NOT DETECTED"));
+  
+  systemStatus.irOk = true; // Assuming it's working if we can read it
 }
 
 
