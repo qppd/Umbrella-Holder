@@ -17,4 +17,8 @@
 #define RELAY_HEATER 8
 #define RELAY_BLOWER 9
 
+// IR Sensor and Limit Switch
+#define IR_SENSOR_PIN 3      // IR sensor for umbrella detection
+#define LIMIT_SWITCH_PIN 11  // Limit switch for door closed/open detection
+
 #endif // PINS_H

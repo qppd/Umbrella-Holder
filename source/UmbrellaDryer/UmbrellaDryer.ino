@@ -5,6 +5,8 @@
 #include "I2cDisplay.h"
 #include "PidController.h"
 #include "RelayModule.h"
+#include "IRSensor.h"
+#include "LimitSwitch.h"
 #include "Pins.h"
 
 #define MODE_DEVELOPMENT 1
@@ -16,6 +18,8 @@ DhtSensor dht;
 I2cDisplay lcd;
 PidController pid;
 RelayModule relays;
+IRSensor irSensor;
+LimitSwitch limitSwitch;
 
 char serialInput[32];
 uint8_t inputIndex = 0;
@@ -49,6 +53,10 @@ bool displayMode = 0; // 0: Status, 1: Detailed
 double targetTemperature = HEATER_SETPOINT;
 bool emergencyStop = false;
 int sensorErrorCount = 0;
+
+// Auto-start variables
+bool lastUmbrellaDetected = false;
+bool lastDoorClosed = false;
 
 // LCD update tracking to prevent flicker
 String lastLine0 = "";
@@ -105,6 +113,9 @@ void setup() {
   
   pid.init();
   systemStatus.pidOk = true;
+  
+  irSensor.init();
+  limitSwitch.init();
 
 #if SYSTEM_MODE == MODE_DEVELOPMENT
   Serial.println(F("OK"));
@@ -173,6 +184,13 @@ void loop() {
   buttons.setInputFlags();
   buttons.resolveInputFlags();
   
+  // Update IR sensor and limit switch
+  irSensor.update();
+  limitSwitch.update();
+  
+  // Check for auto-start condition
+  checkAutoStart();
+  
   // Handle button presses
   handleButtonPresses();
   
@@ -213,6 +231,35 @@ void loop() {
 // ========================================
 //        PRODUCTION MODE FUNCTIONS
 // ========================================
+
+void checkAutoStart() {
+  bool umbrellaDetected = irSensor.isUmbrellaDetected();
+  bool doorClosed = limitSwitch.isDoorClosed();
+  
+  // Auto-start only when:
+  // 1. Umbrella is detected by IR sensor
+  // 2. Door is closed (limit switch pressed)
+  // 3. System is in standby or completed state
+  // 4. This is a new detection (edge trigger)
+  if (umbrellaDetected && doorClosed && 
+      (currentState == STATE_STANDBY || currentState == STATE_COMPLETED)) {
+    // Only trigger on state change (edge detection)
+    if (!lastUmbrellaDetected || !lastDoorClosed) {
+      startDryingCycle();
+      showingSetpoint = false; // Clear setpoint display when auto-starting
+    }
+  }
+  
+  // Prevent starting if door is closed but no umbrella detected
+  if (doorClosed && !umbrellaDetected && 
+      (currentState == STATE_STANDBY || currentState == STATE_COMPLETED)) {
+    // Could display a message here if needed
+  }
+  
+  // Update last states
+  lastUmbrellaDetected = umbrellaDetected;
+  lastDoorClosed = doorClosed;
+}
 
 void handleButtonPresses() {
   // Button 1: Start drying cycle
