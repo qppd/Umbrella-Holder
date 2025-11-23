@@ -20,10 +20,10 @@ void PidController::compute() {
     pid.Compute();
     // Remove debug output in production mode
     #if SYSTEM_MODE == MODE_DEVELOPMENT
-    if (output > 128) {
-        Serial.println("Opening Heater");
+    if (output > 0) {  // For 0-1 normalized output range
+        Serial.println("Heater Relay ON");
     } else {
-        Serial.println("Closing Heater");
+        Serial.println("Heater Relay OFF");
     }
     #endif
 }
