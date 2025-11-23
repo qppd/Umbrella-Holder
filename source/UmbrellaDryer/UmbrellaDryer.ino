@@ -439,8 +439,7 @@ void updateDisplay() {
         lcd.setText("  UMBRELLA DRYER  ", 0, 0);
         lcd.setText("Temp:      C", 0, 1);
         lcd.setText("Humi:       %", 0, 2);
-        lcd.setText("Set:   C BTN1:GO", 0, 3);
-        // Removed degree symbol - using just "C" for Celsius
+        // Set temperature will be updated below
       }
       
       // Update current temperature if changed (>0.2°C difference to prevent jitter)
@@ -456,7 +455,9 @@ void updateDisplay() {
       }
       
       // Always update target temperature display
-      lcd.setTextPadded((int)targetTemperature, 4, 3, 3);
+      char setBuffer[20];
+      sprintf(setBuffer, "Set:%3d C BTN1:GO", (int)targetTemperature);
+      lcd.setText(setBuffer, 0, 3);
       break;
       
     case STATE_STARTING:
