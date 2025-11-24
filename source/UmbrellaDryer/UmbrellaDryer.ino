@@ -327,15 +327,19 @@ void updateSensorsAndSafety() {
     return;
   }
   
-  // Update PID controller
+  // Update PID controller and heater control
   if (currentState == STATE_DRYING) {
     pid.setCurrentTemperature(temp);
     pid.compute();
     
-    // Use PID output for heater control (simplified)
+    // Use PID output for heater control
     double pidOutput = pid.getOutput();
-    bool heaterOn = (pidOutput > 128); // Threshold-based for SSR
+    // Lower threshold for better heating response
+    bool heaterOn = (pidOutput > 50 || temp < targetTemperature - 5.0);
     relays.set(RELAY_HEATER, heaterOn);
+  } else {
+    // Ensure heater is off when not drying
+    relays.set(RELAY_HEATER, false);
   }
 }
 
