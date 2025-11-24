@@ -12,6 +12,7 @@ public:
     void setCurrentTemperature(double temp);
     double getOutput() const;
     void setSetpoint(double setpoint);
+    bool isHeatingRequired() const; // Returns true if PID output > 0
 private:
     double kp, ki, kd;
     double output;

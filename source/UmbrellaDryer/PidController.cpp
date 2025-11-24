@@ -13,15 +13,16 @@ PidController::PidController(double kp, double ki, double kd, double setpoint)
 
 void PidController::init() {
     pid.SetMode(AUTOMATIC);
-    pid.SetOutputLimits(0, 255); // 0-255 for PWM-style control
+    pid.SetOutputLimits(0, 5000); // 0-5000 output range (matches proven heater controller)
 }
 
 void PidController::compute() {
     pid.Compute();
-    // Remove debug output in production mode
+    // Debug output in development mode
     #if SYSTEM_MODE == MODE_DEVELOPMENT
-    if (output > 0) {  // For 0-1 normalized output range
-        Serial.println("Heater Relay ON");
+    if (output > 0) {
+        Serial.print("Heater Relay ON - PID Output: ");
+        Serial.println(output);
     } else {
         Serial.println("Heater Relay OFF");
     }
@@ -38,4 +39,8 @@ double PidController::getOutput() const {
 
 void PidController::setSetpoint(double setpoint) {
     this->setpoint = setpoint;
+}
+
+bool PidController::isHeatingRequired() const {
+    return output > 0; // Simple threshold: heat if PID output > 0
 }

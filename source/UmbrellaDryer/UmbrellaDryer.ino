@@ -26,8 +26,8 @@ uint8_t inputIndex = 0;
 bool serialComplete = false;
 
 // Production mode variables
-const unsigned long DRYING_DURATION = 8UL * 60UL * 1000UL; // 8 minutes in ms
-const unsigned long BLOWER_DELAY = 2UL * 60UL * 1000UL; // 2 minutes delay before blower starts
+const unsigned long HEATER_HEADSTART_DURATION = 2UL * 60UL * 1000UL; // 2 minutes heater-only head start
+const unsigned long DRYING_DURATION = 6UL * 60UL * 1000UL; // 6 minutes total drying time
 const double HEATER_SETPOINT = 60.0;
 const double MIN_SAFE_TEMP = -10.0; // Minimum valid temperature
 const double MAX_SAFE_TEMP = 80.0;  // Maximum safe temperature
@@ -131,7 +131,9 @@ void setup() {
   delay(2000);
   lcd.clear();
   lcd.setText("  UMBRELLA DRYER  ", 0, 0);
-  lcd.setText("Temp: --.- C", 0, 1);
+  lcd.setText("Temp: --.-", 0, 1);
+  lcd.setText((char)223, 10, 1); // Degree symbol
+  lcd.setText("C", 11, 1);
   lcd.setText("Humi: --.-%", 0, 2);
   lcd.setText("Press BTN1: START", 0, 3);
   // Initialize last values to force first update
@@ -281,7 +283,7 @@ void handleButtonPresses() {
   // Button 3: Increase temperature (+5°C)
   if (buttons.getButtonPressed(2)) {
     targetTemperature += 5.0;
-    if (targetTemperature > 60.0) targetTemperature = 60.0; // Max 60°C
+    if (targetTemperature > 70.0) targetTemperature = 70.0; // Max 70°C
     showingSetpoint = true;
     setpointAdjustTime = millis();
     // Force display update
@@ -291,7 +293,7 @@ void handleButtonPresses() {
   // Button 4: Decrease temperature (-5°C)
   if (buttons.getButtonPressed(3)) {
     targetTemperature -= 5.0;
-    if (targetTemperature < 40.0) targetTemperature = 40.0; // Min 40°C
+    if (targetTemperature < 50.0) targetTemperature = 50.0; // Min 50°C
     showingSetpoint = true;
     setpointAdjustTime = millis();
     // Force display update
@@ -327,19 +329,14 @@ void updateSensorsAndSafety() {
     return;
   }
   
-  // Update PID controller and heater control
+  // Update PID controller during drying
   if (currentState == STATE_DRYING) {
     pid.setCurrentTemperature(temp);
     pid.compute();
     
-    // Use PID output for heater control
-    double pidOutput = pid.getOutput();
-    // Lower threshold for better heating response
-    bool heaterOn = (pidOutput > 50 || temp < targetTemperature - 5.0);
+    // Use PID output for heater control (threshold-based like proven heater controller)
+    bool heaterOn = pid.isHeatingRequired(); // true if PID output > 0
     relays.set(RELAY_HEATER, heaterOn);
-  } else {
-    // Ensure heater is off when not drying
-    relays.set(RELAY_HEATER, false);
   }
 }
 
@@ -349,13 +346,12 @@ void startDryingCycle() {
   dryingStartTime = millis();
   pid.setSetpoint(targetTemperature);
   
-  // Heater will turn on via PID controller
-  // Blower will be delayed by 2 minutes to allow temperature buildup
-  relays.set(RELAY_BLOWER, false);
+  // Start with heater only (blower controlled in drying state)
+  relays.set(RELAY_HEATER, false); // PID will control this
+  relays.set(RELAY_BLOWER, false); // Will start after head-start period
 }
 
 void stopDryingCycle() {
-  Serial.println(F("Stopping drying cycle"));
   currentState = STATE_COMPLETED;
   dryingActive = false;
   
@@ -376,22 +372,26 @@ void handleStartingState() {
 }
 
 void handleDryingState() {
+  unsigned long elapsed = millis() - dryingStartTime;
+  
   // Check if drying time is over
-  unsigned long currentTime = millis();
-  unsigned long elapsed = currentTime - dryingStartTime;
-  
   if (elapsed >= DRYING_DURATION) {
-    Serial.println(F("Drying complete - stopping cycle"));
     stopDryingCycle();
-    return; // Exit immediately after stopping
+    return;
   }
   
-  // Turn on blower only after 2-minute heater headstart
-  if (elapsed >= BLOWER_DELAY) {
-    relays.set(RELAY_BLOWER, true);
-  } else {
+  // Phase 1 (0-2 minutes): Heater only (head start)
+  // Phase 2 (2-6 minutes): Heater + Blower
+  
+  if (elapsed < HEATER_HEADSTART_DURATION) {
+    // Phase 1: Heater-only head start
     relays.set(RELAY_BLOWER, false);
+  } else {
+    // Phase 2: Heater + Blower
+    relays.set(RELAY_BLOWER, true);
   }
+  
+  // PID controls heater in both phases (will be updated in updateSensorsAndSafety)
 }
 
 void handleCompletedState() {
@@ -453,9 +453,12 @@ void updateDisplay() {
     case STATE_STANDBY:
       if (stateChanged) {
         lcd.setText("  UMBRELLA DRYER  ", 0, 0);
-        lcd.setText("Temp:      C", 0, 1);
+        lcd.setText("Temp:       ", 0, 1);
+        lcd.setText((char)223, 11, 1); // Degree symbol
+        lcd.setText("C", 12, 1);
         lcd.setText("Humi:       %", 0, 2);
-        // Set temperature will be updated below
+        lcd.setText("Set:    C BTN1:GO", 0, 3);
+        lcd.setText((char)223, 7, 3); // Degree symbol in Set temp
       }
       
       // Update current temperature if changed (>0.2°C difference to prevent jitter)
@@ -471,9 +474,7 @@ void updateDisplay() {
       }
       
       // Always update target temperature display
-      char setBuffer[20];
-      sprintf(setBuffer, "Set:%3d C BTN1:GO", (int)targetTemperature);
-      lcd.setText(setBuffer, 0, 3);
+      lcd.setTextPadded((int)targetTemperature, 4, 3, 3);
       break;
       
     case STATE_STARTING:
@@ -495,7 +496,9 @@ void updateDisplay() {
         if (stateChanged) {
           lcd.setText("  *** DRYING ***  ", 0, 0);
           lcd.setText("Time:   :  ", 0, 1);
-          lcd.setText("Temp:      C", 0, 2);
+          lcd.setText("Temp:       ", 0, 2);
+          lcd.setText((char)223, 11, 2); // Degree symbol
+          lcd.setText("C", 12, 2);
           lcd.setText("Humi:       %", 0, 3);
         }
         
@@ -570,7 +573,9 @@ void displaySetpointAdjustment() {
   }
   
   // Display the setpoint value (centered)
-  String tempStr = "     " + String((int)targetTemperature) + " C     ";
+  String tempStr = "     " + String((int)targetTemperature) + " ";
+  tempStr += (char)223; // Degree symbol
+  tempStr += "C     ";
   lcd.setText(tempStr, 0, 2);
   
   // Show countdown or instruction
