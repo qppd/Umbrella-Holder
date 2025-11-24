@@ -11,7 +11,7 @@
 
 #define MODE_DEVELOPMENT 1
 #define MODE_PRODUCTION 2
-#define SYSTEM_MODE MODE_DEVELOPMENT // Set to DEVELOPMENT for serial testing
+#define SYSTEM_MODE MODE_PRODUCTION // Set to DEVELOPMENT for serial testing
 
 TactileButton buttons;
 DhtSensor dht;

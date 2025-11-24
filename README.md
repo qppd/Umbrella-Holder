@@ -5,10 +5,12 @@
 [![Arduino](https://img.shields.io/badge/Arduino-00979D?style=for-the-badge&logo=Arduino&logoColor=white)](https://www.arduino.cc/)
 [![C++](https://img.shields.io/badge/C%2B%2B-00599C?style=for-the-badge&logo=c%2B%2B&logoColor=white)](https://isocpp.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg?style=for-the-badge)](https://github.com/qppd/Umbrella-Holder)
-[![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg?style=for-the-badge)](https://github.com/qppd/Umbrella-Holder/releases)
+[![Build Status](https://img.shields.io/badge/Build-Complete-brightgreen.svg?style=for-the-badge)](https://github.com/qppd/Umbrella-Holder)
+[![Version](https://img.shields.io/badge/Version-1.1.0-blue.svg?style=for-the-badge)](https://github.com/qppd/Umbrella-Holder/releases)
 
-**An intelligent microcontroller-based dryer for up to 6 umbrellas, featuring PID-controlled heating and automated blower operation via solid state relays. Designed for reliability and ease of use in public or private spaces.**
+**An intelligent microcontroller-based dryer for up to 6 umbrellas, featuring PID-controlled heating, automated blower operation via solid state relays, and smart auto-start functionality with IR sensor and door safety interlocks. Designed for reliability and ease of use in public or private spaces.**
+
+> **🎉 Project Status**: Core functionality complete with comprehensive wiring diagram and documentation. Ready for prototype assembly!
 
 [🚀 Quick Start](#quick-start) • [📖 Documentation](#documentation) • [🛠️ Hardware](#hardware-requirements) • [💡 Features](#features) • [🎯 Usage](#usage-guide) • [🤝 Contributing](#contributing)
 
@@ -45,6 +47,8 @@ The Umbrella Dryer is a sophisticated IoT solution designed to efficiently dry m
 
 - **Multi-Unit Capacity**: Simultaneously processes up to 6 umbrellas
 - **Intelligent Control**: PID-based temperature regulation with adaptive algorithms
+- **Automatic Operation**: Smart auto-start when umbrella detected and door closed
+- **Sensor Integration**: IR sensor for umbrella presence, limit switch for door safety
 - **User Interface**: Intuitive button controls with dual-mode LCD display
 - **Safety Systems**: Comprehensive error detection and emergency shutdown
 - **Modular Design**: Component-based architecture for easy maintenance
@@ -66,6 +70,9 @@ The Umbrella Dryer is a sophisticated IoT solution designed to efficiently dry m
 | **Environmental Monitoring** | Real-time temperature and humidity tracking (500ms updates) | ✅ Complete |
 | **Relay Control** | Dual SSR system for heater and blower management | ✅ Complete |
 | **Safety Systems** | Comprehensive error detection and emergency controls | ✅ Complete |
+| **IR Sensor Detection** | Automatic umbrella presence detection using IR sensor | ✅ Complete |
+| **Limit Switch Monitoring** | Door closed/open detection for safety interlocks | ✅ Complete |
+| **Auto-Start Functionality** | Automatic drying cycle start when umbrella detected AND door closed | ✅ Complete |
 
 ### Advanced Capabilities
 - **State Machine Architecture**: Professional-grade system states (Standby, Starting, Drying, Completed, Error, Emergency Stop)
@@ -76,6 +83,10 @@ The Umbrella Dryer is a sophisticated IoT solution designed to efficiently dry m
 - **Memory Optimization**: Efficient resource usage suitable for Arduino Uno
 - **Anti-Flicker Display**: Smart LCD updates only refresh changed data, eliminating screen blinking
 - **Continuous Button Listener**: Always-active button monitoring ensures responsive controls
+- **Automatic Start System**: Intelligent auto-start when umbrella is detected AND door is closed
+- **IR Sensor Integration**: Real-time umbrella presence detection with 100ms sampling
+- **Limit Switch Safety**: Door state monitoring with hardware debouncing (50ms)
+- **Edge Detection Logic**: Prevents multiple triggers from sensor state changes
 
 ### User Interface
 - **Button 1**: Start drying cycle
@@ -133,6 +144,8 @@ cd Umbrella-Holder
 | **Push Buttons** | Tactile switches | 4 | User input | 50ms debounce |
 | **Heating Element** | 500W max | 1 | Drying mechanism | Safety rated |
 | **Blower Fan** | 12V DC | 1 | Air circulation | Variable speed |
+| **IR Sensor** | Digital IR module | 1 | Umbrella presence detection | Active LOW when triggered |
+| **Limit Switch** | Door position sensor | 1 | Door closed/open detection | Normally open, pulled up |
 
 #### Supporting Components
 | Component | Specification | Quantity | Purpose |
@@ -153,6 +166,8 @@ cd Umbrella-Holder
 #define RELAY_HEATER 8   // Heater SSR control
 #define RELAY_BLOWER 9   // Blower SSR control
 #define DHTPIN      10   // DHT22 data pin
+#define LIMIT_SWITCH_PIN 11  // Door closed/open detection
+#define IR_SENSOR_PIN 3      // Umbrella presence detection
 
 // I2C Communication (Fixed pins on Uno)
 // SDA - Pin A4 (LCD Data)
@@ -201,6 +216,7 @@ Install required libraries via Library Manager (`Sketch > Include Library > Mana
 ```
 Arduino Uno    →    Component
 ─────────────────────────────────
+Pin 3          →    IR Sensor (signal, active LOW when umbrella detected)
 Pin 4          →    Button 1 (10kΩ pull-up)
 Pin 5          →    Button 2 (10kΩ pull-up)
 Pin 6          →    Button 3 (10kΩ pull-up)
@@ -208,6 +224,7 @@ Pin 7          →    Button 4 (10kΩ pull-up)
 Pin 8          →    Heater SSR (control)
 Pin 9          →    Blower SSR (control)
 Pin 10         →    DHT22 (data)
+Pin 11         →    Limit Switch (normally open, pulled up when door closed)
 Pin A4 (SDA)   →    LCD SDA
 Pin A5 (SCL)   →    LCD SCL
 GND            →    Common ground
@@ -333,15 +350,17 @@ double kd = 22.0;   // Derivative gain
 #### Pin Assignments
 ```cpp
 // Input pins
-#define BUTTON_1 4    // Start/Stop
-#define BUTTON_2 5    // Display toggle
-#define BUTTON_3 6    // Temperature adjust
-#define BUTTON_4 7    // Emergency stop
-#define DHTPIN 10     // Temperature sensor
+#define BUTTON_1 4          // Start/Stop
+#define BUTTON_2 5          // Display toggle
+#define BUTTON_3 6          // Temperature adjust
+#define BUTTON_4 7          // Emergency stop
+#define DHTPIN 10           // Temperature sensor
+#define IR_SENSOR_PIN 3     // Umbrella presence detection
+#define LIMIT_SWITCH_PIN 11 // Door closed/open detection
 
 // Output pins
-#define RELAY_HEATER 8  // Heater control
-#define RELAY_BLOWER 9  // Blower control
+#define RELAY_HEATER 8      // Heater control
+#define RELAY_BLOWER 9      // Blower control
 
 // I2C pins (hardware defined)
 // SDA - Pin A4
@@ -394,9 +413,17 @@ PidController::PidController(double kp, double ki, double kd, double setpoint)
 
 #### Control Interface
 
+##### Automatic Operation
+The system features intelligent automatic start functionality that activates the drying cycle when both safety conditions are met:
+
+- **IR Sensor Detection**: Detects when an umbrella is properly placed in the dryer
+- **Door Safety Interlock**: Ensures the dryer door is fully closed before starting
+- **Auto-Start Logic**: Automatically begins drying cycle when umbrella is detected AND door is closed
+- **Safety Override**: Manual button controls remain available for user override
+
 ##### Button Functions
 - **Button 1 (Start)**
-  - *Standby*: Starts drying cycle
+  - *Standby*: Starts drying cycle (manual override)
   - *Completed*: Starts new cycle
   - No effect during active drying
 
@@ -558,6 +585,8 @@ The 20x4 LCD display features an intelligent update system that prevents flicker
 | `test_relay` | Relay module test | Heater/blower activation |
 | `test_button` | Button response test | 5-second input monitoring |
 | `test_pid` | PID controller test | Output calculation |
+| `test_ir` | IR sensor test | Umbrella detection status |
+| `test_limit` | Limit switch test | Door position status |
 
 ##### Manual Control
 | Command | Function | Effect |
@@ -587,6 +616,8 @@ The 20x4 LCD display features an intelligent update system that prevents flicker
 > test_relay      # Check SSR operation
 > test_button     # Validate input response
 > test_pid        # Verify control algorithm
+> test_ir         # Test umbrella detection
+> test_limit      # Test door position sensor
 ```
 
 ##### Manual Operation Testing
@@ -619,6 +650,8 @@ UmbrellaDryer/
 ├── PidController.cpp/.h   # Temperature control algorithms
 ├── RelayModule.cpp/.h     # SSR abstraction layer
 ├── TactileButton.cpp/.h   # Button input handling
+├── IRSensor.cpp/.h        # Umbrella presence detection
+├── LimitSwitch.cpp/.h     # Door position monitoring
 └── Pins.h                 # Hardware pin definitions
 ```
 
@@ -769,7 +802,42 @@ public:
 - **Dual Mode**: Development and production operation
 - **Flag System**: Non-blocking button state management
 
-### System Constants
+#### IRSensor Class
+**Purpose**: Umbrella presence detection using IR sensor with periodic sampling
+
+```cpp
+class IRSensor {
+public:
+    IRSensor();                              // Constructor
+    void init();                             // Initialize IR sensor pin
+    bool isUmbrellaDetected();               // Check detection status
+    void update();                           // Update sensor reading (call regularly)
+};
+```
+
+**Features**:
+- **Periodic Sampling**: 100ms update interval for reliable detection
+- **Active LOW Logic**: Sensor outputs LOW when umbrella is detected
+- **State Tracking**: Maintains detection status between updates
+
+#### LimitSwitch Class
+**Purpose**: Door position monitoring with hardware debouncing for safety interlocks
+
+```cpp
+class LimitSwitch {
+public:
+    LimitSwitch();                           // Constructor
+    void init();                             // Initialize switch pin with pull-up
+    bool isDoorClosed();                     // Check if door is closed
+    bool isDoorOpen();                       // Check if door is open
+    void update();                           // Update switch state with debouncing
+};
+```
+
+**Safety Features**:
+- **Hardware Debouncing**: 50ms debounce delay prevents false triggers
+- **Pull-up Configuration**: Internal pull-up resistor for reliable operation
+- **State Validation**: Clear closed/open status reporting
 
 #### Pin Definitions (Pins.h)
 ```cpp
@@ -779,11 +847,12 @@ public:
 #define BUTTON_COUNT 4
 #define DEBOUNCE_DELAY 50
 
-// Sensor input
-#define DHTPIN 10     #define DHTTYPE DHT22
+// Sensor inputs
+#define DHTPIN 10           #define DHTTYPE DHT22
+#define IR_SENSOR_PIN 3     #define LIMIT_SWITCH_PIN 11
 
-// Relay outputs  
-#define RELAY_HEATER 8    #define RELAY_BLOWER 9
+// Relay outputs
+#define RELAY_HEATER 8      #define RELAY_BLOWER 9
 ```
 
 #### System States
@@ -825,8 +894,8 @@ enum SystemState {
 > test_relay      # SSR functionality
 > test_button     # Input responsiveness
 > test_pid        # Control algorithm
-> test_limit      # Door limit switch test
-> test_ir         # Umbrella IR sensor test
+> test_ir         # Umbrella detection sensor
+> test_limit      # Door position switch
 ```
 
 #### Expected Test Results
@@ -860,12 +929,12 @@ BTN1 BTN2 BTN3 BTN4
 ```
 **Success Criteria**: Button presses registered and displayed
 
-##### PID Controller Test
+##### IR Sensor Test
 ```
-> test_pid
-PID - T:23.5 Out:255.0
+> test_ir
+IR - Umbrella:NOT_DETECTED
 ```
-**Success Criteria**: PID output calculation based on current temperature
+**Success Criteria**: Sensor state correctly reported (detected/not detected)
 
 ##### Limit Switch Test
 ```
@@ -1322,6 +1391,118 @@ G-code for printing the Limit Switch Mount, compatible with Creality Ender 3 V2 
 
 ---
 
+## 📊 System Flowchart
+
+### System Operation Flow Diagram
+
+```mermaid
+flowchart TD
+    Start([System Power On]) --> Init[Initialize Components]
+    Init --> InitCheck{All Components<br/>Initialized?}
+    
+    InitCheck -->|No| ErrorState[ERROR State]
+    InitCheck -->|Yes| ModeCheck{System Mode?}
+    
+    ModeCheck -->|Development| DevMode[Development Mode<br/>Serial Commands Active]
+    ModeCheck -->|Production| Standby[STANDBY State<br/>Display Ready Screen]
+    
+    Standby --> SensorUpdate[Update Sensors:<br/>- IR Sensor<br/>- Limit Switch<br/>- DHT22]
+    SensorUpdate --> CheckAuto{Auto-Start<br/>Conditions?}
+    
+    CheckAuto -->|Umbrella Detected<br/>AND Door Closed| AutoStart[Automatic Start<br/>Edge Detection]
+    CheckAuto -->|No| CheckManual{Button 1<br/>Pressed?}
+    
+    CheckManual -->|Yes| ManualStart[Manual Start]
+    CheckManual -->|No| TempAdj{Button 3/4<br/>Pressed?}
+    
+    TempAdj -->|Yes| AdjustTemp[Adjust Temperature<br/>±5°C]
+    TempAdj -->|No| SensorUpdate
+    
+    AutoStart --> Starting[STARTING State]
+    ManualStart --> Starting
+    AdjustTemp --> ShowSetpoint[Display Setpoint<br/>5 seconds]
+    ShowSetpoint --> SensorUpdate
+    
+    Starting --> Drying[DRYING State<br/>Start Timer: 8 min]
+    
+    Drying --> DryingLoop{Cycle Active?}
+    DryingLoop --> ReadSensors[Read Temperature<br/>& Humidity]
+    ReadSensors --> SafetyCheck{Safety Check<br/>Pass?}
+    
+    SafetyCheck -->|Sensor Error| ErrorState
+    SafetyCheck -->|Temp Out Range| ErrorState
+    SafetyCheck -->|OK| PIDCompute[PID Compute<br/>Temperature Control]
+    
+    PIDCompute --> RelayControl{PID Output<br/>> 0?}
+    RelayControl -->|Yes| HeaterOn[Heater Relay ON]
+    RelayControl -->|No| HeaterOff[Heater Relay OFF]
+    
+    HeaterOn --> BlowerOn[Blower Relay ON]
+    HeaterOff --> BlowerOn
+    
+    BlowerOn --> UpdateDisplay[Update LCD Display<br/>Timer & Sensors]
+    UpdateDisplay --> CheckStop{Button 2<br/>Pressed?}
+    
+    CheckStop -->|Yes| StopCycle[Stop Cycle]
+    CheckStop -->|No| CheckTime{Timer<br/>Expired?}
+    
+    CheckTime -->|No| DryingLoop
+    CheckTime -->|Yes| Complete[COMPLETED State]
+    
+    Complete --> RelaysOff[Turn OFF All Relays]
+    RelaysOff --> DisplayComplete[Display Complete<br/>Message]
+    DisplayComplete --> WaitNewCycle{Button 1<br/>Pressed?}
+    
+    WaitNewCycle -->|Yes| Starting
+    WaitNewCycle -->|No| DisplayComplete
+    
+    StopCycle --> Complete
+    
+    ErrorState --> DisplayError[Display Error<br/>Message]
+    DisplayError --> ErrorWait[Wait 10 Seconds]
+    ErrorWait --> ErrorRecovery{Recovery<br/>Timeout?}
+    
+    ErrorRecovery -->|Yes| Standby
+    ErrorRecovery -->|No| DisplayError
+    
+    DevMode --> SerialCmd{Serial<br/>Command?}
+    SerialCmd -->|help| ShowCommands[Show Available<br/>Commands]
+    SerialCmd -->|test_*| RunTest[Execute Component<br/>Test]
+    SerialCmd -->|h_on/off| ManualHeater[Manual Heater<br/>Control]
+    SerialCmd -->|b_on/off| ManualBlower[Manual Blower<br/>Control]
+    SerialCmd -->|monitor| ContMonitor[Continuous<br/>Monitoring]
+    
+    ShowCommands --> SerialCmd
+    RunTest --> SerialCmd
+    ManualHeater --> SerialCmd
+    ManualBlower --> SerialCmd
+    ContMonitor --> SerialCmd
+    
+    style Start fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style Standby fill:#2196F3,stroke:#1565C0,color:#fff
+    style Drying fill:#FF9800,stroke:#E65100,color:#fff
+    style Complete fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style ErrorState fill:#F44336,stroke:#C62828,color:#fff
+    style AutoStart fill:#9C27B0,stroke:#6A1B9A,color:#fff
+    style DevMode fill:#607D8B,stroke:#37474F,color:#fff
+```
+
+### State Transition Summary
+
+| Current State | Trigger | Next State |
+|---------------|---------|------------|
+| **Standby** | Umbrella detected + Door closed | Starting (Auto) |
+| **Standby** | Button 1 pressed | Starting (Manual) |
+| **Standby** | Button 3/4 pressed | Standby (Temp adjusted) |
+| **Starting** | Initialization complete | Drying |
+| **Drying** | Timer expired (8 min) | Completed |
+| **Drying** | Button 2 pressed | Completed (Manual stop) |
+| **Drying** | Safety check failed | Error |
+| **Completed** | Button 1 pressed | Starting |
+| **Error** | 10-second timeout | Standby |
+
+---
+
 ## ⚙️ System Operation
 
 ### 🎮 Production Mode Controls
@@ -1736,6 +1917,7 @@ arduino-cli lib install "LiquidCrystal I2C"
 
 ## 🔌 Wiring Diagram
 
+> **✅ Complete**: Comprehensive wiring diagram with all components including IR sensor and limit switch integration.
 
 <div align="center">
    <img src="diagram/Umbrella_Dryer_Wiring_Diagram.png" alt="Umbrella Dryer Wiring Diagram" width="600"/>
@@ -1747,6 +1929,7 @@ arduino-cli lib install "LiquidCrystal I2C"
 ```
 Arduino Uno/Nano    Component
 ================    =========
+Digital Pin 3   →   IR Sensor (umbrella detection)
 Digital Pin 4   →   Button 1
 Digital Pin 5   →   Button 2
 Digital Pin 6   →   Button 3
@@ -1754,6 +1937,7 @@ Digital Pin 7   →   Button 4
 Digital Pin 8   →   SSR Heater Control
 Digital Pin 9   →   SSR Blower Control
 Digital Pin 10  →   DHT22 Data Pin
+Digital Pin 11  →   Limit Switch (door closed detection)
 Analog Pin A4   →   LCD SDA (I2C)
 Analog Pin A5   →   LCD SCL (I2C)
 5V             →   VCC (All components)
