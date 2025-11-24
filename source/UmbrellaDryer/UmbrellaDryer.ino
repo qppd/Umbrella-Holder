@@ -11,7 +11,7 @@
 
 #define MODE_DEVELOPMENT 1
 #define MODE_PRODUCTION 2
-#define SYSTEM_MODE MODE_PRODUCTION // Set to DEVELOPMENT for serial testing
+#define SYSTEM_MODE MODE_DEVELOPMENT // Set to DEVELOPMENT for serial testing
 
 TactileButton buttons;
 DhtSensor dht;
@@ -349,6 +349,7 @@ void startDryingCycle() {
 }
 
 void stopDryingCycle() {
+  Serial.println(F("Stopping drying cycle"));
   currentState = STATE_COMPLETED;
   dryingActive = false;
   
@@ -370,11 +371,16 @@ void handleStartingState() {
 
 void handleDryingState() {
   // Check if drying time is over
-  if (millis() - dryingStartTime >= DRYING_DURATION) {
+  unsigned long currentTime = millis();
+  unsigned long elapsed = currentTime - dryingStartTime;
+  
+  if (elapsed >= DRYING_DURATION) {
+    Serial.println(F("Drying complete - stopping cycle"));
     stopDryingCycle();
+    return; // Exit immediately after stopping
   }
   
-  // Keep blower running
+  // Keep blower running only during active drying
   relays.set(RELAY_BLOWER, true);
 }
 
