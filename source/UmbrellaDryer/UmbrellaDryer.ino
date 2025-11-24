@@ -27,6 +27,7 @@ bool serialComplete = false;
 
 // Production mode variables
 const unsigned long DRYING_DURATION = 8UL * 60UL * 1000UL; // 8 minutes in ms
+const unsigned long BLOWER_DELAY = 2UL * 60UL * 1000UL; // 2 minutes delay before blower starts
 const double HEATER_SETPOINT = 60.0;
 const double MIN_SAFE_TEMP = -10.0; // Minimum valid temperature
 const double MAX_SAFE_TEMP = 80.0;  // Maximum safe temperature
@@ -344,8 +345,9 @@ void startDryingCycle() {
   dryingStartTime = millis();
   pid.setSetpoint(targetTemperature);
   
-  // Turn on systems
-  relays.set(RELAY_BLOWER, true);
+  // Heater will turn on via PID controller
+  // Blower will be delayed by 2 minutes to allow temperature buildup
+  relays.set(RELAY_BLOWER, false);
 }
 
 void stopDryingCycle() {
@@ -380,8 +382,12 @@ void handleDryingState() {
     return; // Exit immediately after stopping
   }
   
-  // Keep blower running only during active drying
-  relays.set(RELAY_BLOWER, true);
+  // Turn on blower only after 2-minute heater headstart
+  if (elapsed >= BLOWER_DELAY) {
+    relays.set(RELAY_BLOWER, true);
+  } else {
+    relays.set(RELAY_BLOWER, false);
+  }
 }
 
 void handleCompletedState() {
