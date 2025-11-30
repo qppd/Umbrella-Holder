@@ -629,6 +629,7 @@ The 20x4 LCD display features an intelligent update system that prevents flicker
 > h_on            # Test heater
 > h_off           # Verify shutdown
 > b_on            # Test blower
+> b_off           # Verify relay off
 > monitor         # Real-time monitoring
 ```
 
@@ -898,7 +899,7 @@ enum SystemState {
 > test_button     # Input responsiveness
 > test_pid        # Control algorithm
 > test_ir         # Umbrella detection sensor
-> test_limit      # Door position switch
+> test_limit      # Door position sensor
 ```
 
 #### Expected Test Results
@@ -1218,7 +1219,7 @@ UmbrellaDryer/
 ├── 📺 I2cDisplay.cpp/.h      # LCD display management
 ├── 🎛️ PidController.cpp/.h   # PID algorithm for heater control
 ├── 🔌 RelayModule.cpp/.h     # Solid state relay abstraction
-├── 🔘 TactileButton.cpp/.h   # Button input handling & debouncing
+├── 🔘 TactileButton.cpp/.h   # Button input handling
 ├── 📌 Pins.h                 # Hardware pin definitions
 └── 📖 README.md              # Project documentation
 ```
@@ -1394,6 +1395,24 @@ G-code for printing the Limit Switch Mount, compatible with Creality Ender 3 V2 
 
 ---
 
+### Full System Rendered Model
+<div align="center">
+   <img src="model/Rendered_3D_Model.png" alt="Full System Rendered 3D Model" width="500"/>
+</div>
+**Description:**
+High-quality render of the complete umbrella dryer assembly, showing all major components in their installed positions.
+
+---
+
+### Umbrella Holder Full View
+<div align="center">
+   <img src="model/Umbrella_Holder_Full_View.png" alt="Umbrella Holder Full View 3D Model" width="500"/>
+</div>
+**Description:**
+Perspective view of the umbrella holder, highlighting the overall structure and design for reference and assembly.
+
+---
+
 ## 📊 System Flowchart
 
 ### System Operation Flow Diagram
@@ -1531,8 +1550,8 @@ flowchart TD
 2. **Production Mode User Interface**
    - **Button 1**: Start drying cycle
    - **Button 2**: Stop drying cycle
-   - **Button 3**: Increase target temperature (+5°C, works anytime)
-   - **Button 4**: Decrease target temperature (-5°C, works anytime)
+   - **Button 3**: Increase temperature (+5°C, works anytime)
+   - **Button 4**: Decrease temperature (-5°C, works anytime)
    - **Setpoint Display**: Auto-shows adjustment screen for 5 seconds when BTN3/BTN4 pressed
 
 3. **Automatic Drying Cycle**
@@ -1628,175 +1647,6 @@ Set `SYSTEM_MODE` to `MODE_DEVELOPMENT` for component testing via Serial Monitor
 
 ---
 
-## 🖥️ Serial Commands Reference (Development Mode)
-
-### System Information Commands
-| Command | Description | Status |
-|---------|-------------|--------|
-| `help` | Display command reference | ✅ Available |
-| `status` | Show component status overview | ✅ Available |
-| `sensors` | Get current sensor readings | ✅ Available (DHT22 working) |
-
-### Component Testing Commands (Memory Optimized)
-| Command | Description | Test Status |
-|---------|-------------|-------------|
-| `test_dht` | Test DHT22 sensor | ✅ **WORKING** - Temperature/humidity readings |
-| `test_lcd` | Test I2C LCD display | ✅ **WORKING** - Clear and write test |
-| `test_relay` | Test relay modules | ✅ **WORKING** - Heater and blower control |
-| `test_button` | Test tactile buttons | ✅ Available - 5-second button test |
-| `test_pid` | Test PID controller | ✅ Available - Output calculation test |
-| `test_limit` | Test limit switch | ✅ Available - Door open/closed detection |
-| `test_ir` | Test IR sensor | ✅ Available - Umbrella presence detection |
-
-### Manual Hardware Control (Verified)
-| Command | Description | Status |
-|---------|-------------|--------|
-| `h_on` / `h_off` | Control heater relay | ✅ **TESTED & WORKING** |
-| `b_on` / `b_off` | Control blower relay | ✅ **TESTED & WORKING** |
-| `clear` | Clear LCD display | ✅ Available |
-
-### System Control
-| Command | Description | Action |
-|---------|-------------|--------|
-| `monitor` | Toggle continuous monitoring | ✅ Available |
-| `reset` | Software reset | ✅ Available |
-
-### Example Testing Session (Memory Optimized)
-```
-UMBRELLA DRYER - DEV MODE
-Init... OK
-Type 'help' for commands
-
-> status
---- STATUS ---
-DHT: OK
-LCD: OK
-RELAY: OK
-BTN: OK
-PID: OK
-LIMIT: OK
-IR: OK
-Monitor: OFF
-
-> sensors
-T:25.30C H:60.20%
-PID:2500.00
-
-> test_lcd
-LCD TEST - Display output OK
-
-> test_dht
-DHT - T:25.30 H:60.20 OK
-
-> test_relay
-Relay OK
-
-> h_on
-Heater ON
-
-> h_off
-Heater OFF
-
-> b_on
-Blower ON
-
-> b_off
-Blower OFF
-```
-
----
-
-## 🧑‍💻 Code Architecture
-
-### Core Classes
-
-#### 🎛️ PidController
-- **Purpose**: Maintains precise temperature control with user-adjustable setpoint
-- **Features**: Configurable PID parameters (Kp=4, Ki=0, Kd=22), Output range 0-255
-- **Methods**: `init()`, `compute()`, `setCurrentTemperature()`, `getOutput()`, `setSetpoint()`
-- **Integration**: Actual PID output controls heater relay via threshold-based SSR control
-
-#### 🌡️ DhtSensor  
-- **Purpose**: Environmental monitoring
-- **Features**: Temperature (°C/°F) and humidity readings
-- **Methods**: `begin()`, `getTemperature()`, `getHumidity()`
-
-#### 📺 I2cDisplay
-- **Purpose**: Advanced user interface and comprehensive status display
-- **Features**: 20x4 character LCD with I2C communication, dual display modes
-- **Methods**: `init()`, `clear()`, `setText()` (multiple overloads for different data types)
-- **Display Modes**: Status view (cycle info) and Detailed view (sensor readings)
-
-#### 🔌 RelayModule
-- **Purpose**: High-power device control abstraction with PID integration
-- **Features**: SSR control for heater (PID-controlled) and blower (continuous during cycle)
-- **Methods**: `init()`, `set(relay, state)`
-- **Safety**: Automatic shutoff on sensor failure and emergency stop
-
-####  TactileButton
-- **Purpose**: Complete user interaction and system control
-- **Features**: 4 buttons with debouncing, dual-mode operation (dev/production)
-- **Methods**: `init()`, `setInputFlags()`, `resolveInputFlags()`, `getButtonPressed()`
-- **Functions**: Start/stop, temperature adjust
-
----
-
-## ⚙️ Configuration
-
-### System Mode Selection
-```cpp
-#define MODE_DEVELOPMENT 1
-#define MODE_PRODUCTION 2
-#define SYSTEM_MODE MODE_PRODUCTION  // Change this to switch modes
-```
-
-### Temperature Settings
-```cpp
-const double HEATER_SETPOINT = 60.0;  // Default target temperature in Celsius
-const double MIN_SAFE_TEMP = -10.0;   // Minimum valid sensor reading
-const double MAX_SAFE_TEMP = 80.0;    // Maximum safe temperature
-// User adjustable range in production: 40°C to 60°C (5°C increments)
-```
-
-### Timing Configuration
-```cpp
-const unsigned long DRYING_DURATION = 8UL * 60UL * 1000UL;  // 8 minutes
-const unsigned long DISPLAY_UPDATE_INTERVAL = 1000;         // 1 second
-const unsigned long SENSOR_TIMEOUT = 5000;                  // 5 seconds
-```
-
-### Safety Parameters
-```cpp
-const int MAX_SENSOR_ERRORS = 3;  // Max consecutive sensor failures before error state
-const unsigned long ERROR_RECOVERY_TIME = 10000;  // 10 seconds before auto-recovery
-```
-
-### PID Tuning Parameters
-```cpp
-double kp = 4;   // Proportional gain
-double ki = 0;   // Integral gain  
-double kd = 22;  // Derivative gain
-```
-
-### System Modes
-```cpp
-#define MODE_DEVELOPMENT 1  // Serial testing & diagnostics mode
-#define MODE_PRODUCTION 2   // Full automatic operation mode
-#define SYSTEM_MODE MODE_DEVELOPMENT  // Current mode (set for testing)
-```
-
-#### Development Mode Features (Optimized for Arduino Uno)
-- **🔧 Memory-Optimized Commands:** 15 essential commands for testing
-- **📊 Real-time Sensor Data:** DHT22 temperature/humidity monitoring ✅ **WORKING**
-- **🎛️ Hardware Control:** Direct relay and LCD control ✅ **RELAYS TESTED**
-- **📈 Component Testing:** Individual module verification
-- **🛠️ Manual Override:** Direct hardware control via serial
-- **💾 RAM Efficient:** Optimized to fit Arduino Uno memory constraints
-- **🔄 Status Reporting:** Compact system health monitoring
-- **📋 Quick Testing:** Streamlined component verification
-
----
-
 ## � Complete Usage Guide
 
 ### 🚀 First-Time Setup
@@ -1886,146 +1736,6 @@ Install these libraries through the Arduino Library Manager:
 **Note:** Serial testing system optimized for Arduino Uno memory constraints using native Arduino functionality.
 
 ## 🧪 Testing Progress & Status
-
-### ✅ **VERIFIED WORKING COMPONENTS**
-| Component | Status | Test Command | Notes |
-|-----------|--------|--------------|--------|
-| DHT22 Sensor | ✅ **WORKING** | `test_dht` | Temperature & humidity readings confirmed |
-| Heater Relay | ✅ **WORKING** | `h_on` / `h_off` | SSR control verified |
-| Blower Relay | ✅ **WORKING** | `b_on` / `b_off` | SSR control verified |
-| I2C LCD Display | ✅ **WORKING** | `test_lcd` | Display output confirmed |
-| Serial Interface | ✅ **WORKING** | `help` | All commands responsive |
-
-### 🔄 **COMPONENTS READY FOR TESTING**
-| Component | Status | Test Command | Next Steps |
-|-----------|--------|--------------|------------|
-| Tactile Buttons | 🟡 Ready | `test_button` | Test button inputs |
-| PID Controller | 🟡 Ready | `test_pid` | Test with real sensor data |
-
-### 📊 **System Health**
-- **Memory Usage:** Optimized to fit Arduino Uno (< 75% RAM)
-- **Code Size:** Reduced from 242% to ~60% of available memory
-- **Core Functionality:** All essential testing features retained
-- **Hardware Interface:** DHT22 and relays confirmed functional
-
-### Installation Commands
-```bash
-# Using Arduino CLI
-arduino-cli lib install "PID"
-arduino-cli lib install "DHT sensor library"  
-arduino-cli lib install "LiquidCrystal I2C"
-```
-
----
-
-## 🔌 Wiring Diagram
-
-> **✅ Complete**: Comprehensive wiring diagram with all components including IR sensor and limit switch integration.
-
-<div align="center">
-   <img src="diagram/Umbrella_Dryer_Wiring_Diagram.png" alt="Umbrella Dryer Wiring Diagram" width="600"/>
-</div>
-
-<details>
-<summary>Pin Mapping Table</summary>
-
-```
-Arduino Uno/Nano    Component
-================    =========
-Digital Pin 3   →   IR Sensor (umbrella detection)
-Digital Pin 4   →   Button 1
-Digital Pin 5   →   Button 2
-Digital Pin 6   →   Button 3
-Digital Pin 7   →   Button 4
-Digital Pin 8   →   SSR Heater Control
-Digital Pin 9   →   SSR Blower Control
-Digital Pin 10  →   DHT22 Data Pin
-Digital Pin 11  →   Limit Switch (door closed detection)
-Analog Pin A4   →   LCD SDA (I2C)
-Analog Pin A5   →   LCD SCL (I2C)
-5V             →   VCC (All components)
-GND            →   GND (All components)
-```
-</details>
-
-
-## 🚦 Troubleshooting
-
-### Common Issues
-
-#### 🔥 Heater Not Maintaining Temperature
-- Check SSR connections and power supply
-- Verify DHT22 sensor readings with `test_dht`
-- Adjust PID parameters if needed
-
-#### 📺 LCD Not Displaying (Hardware Only)
-- LCD display is verified working with test code. If you see no output:
-   - Verify I2C address (default: 0x27)
-   - Check SDA/SCL connections
-   - Test with `test_lcd` command
-
-#### 🔘 Buttons Not Responsive  
-- Check debounce delay settings
-- Verify pin connections
-- Use `test_button` for diagnostics
-
-### 🔍 Development Mode Testing
-
-#### Setting Up Serial Testing
-1. **Enable Development Mode:**
-   ```cpp
-   #define SYSTEM_MODE MODE_DEVELOPMENT
-   ```
-
-2. **Serial Monitor Configuration:**
-   - Baud Rate: 115200
-   - Line Ending: Both NL & CR
-   - Open Serial Monitor after upload
-
-3. **First Steps:**
-   ```
-   > help          // Show all commands
-   > status        // Check component health
-   > test_all      // Run full system test
-   ```
-
-#### Systematic Testing Approach
-1. **Component Verification:**
-   ```
-   > test_dht      // Verify sensor communication
-   > test_lcd      // Check display functionality
-   > test_relay    // Test relay switching
-   ```
-
-2. **Interactive Testing:**
-   ```
-   > interactive_on     // Enable button monitoring
-   > monitor_start      // Start sensor logging
-   ```
-
-3. **Manual Control Testing:**
-   ```
-   > relay_heater_on    // Test heater control
-   > lcd_clear          // Test display control
-   ```
-
-#### Serial Command Troubleshooting
-
-**✅ VERIFIED WORKING:**
-- **DHT22 Sensor:** Temperature and humidity readings confirmed working
-- **Relay Control:** Both heater and blower relays tested and functional
-- **Serial Commands:** All testing commands responding correctly
-
-**If you encounter issues:**
-- **No Response:** Check baud rate (115200) and cable connection
-- **Garbled Text:** Verify line ending settings (NL + CR)
-- **Commands Not Working:** Type exact commands (case insensitive)
-- **Memory Issues:** Current optimized version fits Arduino Uno constraints
-- **Other Components:** Use individual test commands to verify LCD, buttons
-
----
-
-## 🎯 Project Status
 
 ### ✅ **FULLY COMPLETE & PRODUCTION READY**
 
@@ -2121,12 +1831,6 @@ SOFTWARE.
 - **PID_v1 Library**: Licensed under MIT License
 - **DHT Sensor Library**: Licensed under MIT License  
 - **LiquidCrystal_I2C**: Licensed under GPL v3.0
-
----
-
-## 🏷️ Tags
-
-`#UmbrellaDryer` `#Arduino` `#PID` `#IoT` `#SmartHome` `#Automation` `#DHT22` `#I2C` `#SolidStateRelay` `#Maker` `#OpenSource` `#CPlusPlus` `#Embedded`
 
 ---
 
