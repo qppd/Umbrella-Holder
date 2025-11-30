@@ -27,7 +27,7 @@ bool serialComplete = false;
 
 // Production mode variables
 const unsigned long HEATER_HEADSTART_DURATION = 2UL * 60UL * 1000UL; // 2 minutes heater-only head start
-const unsigned long DRYING_DURATION = 10UL * 60UL * 1000UL; // 10 minutes total drying time (2 min heater only + 8 min heater+blower)
+const unsigned long DRYING_DURATION = 8UL * 60UL * 1000UL; // 10 minutes total drying time (2 min heater only + 8 min heater+blower)
 const double HEATER_SETPOINT = 60.0;
 const double MIN_SAFE_TEMP = -10.0; // Minimum valid temperature
 const double MAX_SAFE_TEMP = 80.0;  // Maximum safe temperature
